@@ -10,5 +10,5 @@ Python package (`bt-web-report-schemas`) and an npm package
 - `project_yaml.schema.json` — JSON Schema for per-project `project.yaml`
 - `manifest.schema.json` — JSON Schema for generated `data/manifest.json`
 
-See [`../context/data_pipeline.md`](../context/data_pipeline.md) for the
+See [`../context/data-pipeline.html`](../context/data-pipeline.html) for the
 data shapes this package validates.
