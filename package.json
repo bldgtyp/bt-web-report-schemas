@@ -1,6 +1,6 @@
 {
   "name": "@bldgtyp/web-report-schemas",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "JSON Schemas + TypeScript types for the bt-web-report platform (project.yaml, manifest.json).",
   "type": "module",
   "main": "./src-js/index.ts",
@@ -11,5 +11,7 @@
   "files": ["src-js"],
   "license": "GPL-3.0-or-later",
   "repository": "github:bldgtyp/bt-web-report-schemas",
-  "private": true
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
 }
