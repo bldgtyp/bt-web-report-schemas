@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 
 from bt_web_report_schemas.phpp.models import FieldRef, SectionMap, WorkbookSchema
+from bt_web_report_schemas.phpp.v10_6.climate import CLIMATE_MONTHLY
+from bt_web_report_schemas.phpp.v10_6.room_ventilation import ROOM_VENTILATION
 
 
 def _field_id(label: str) -> str:
@@ -370,4 +372,6 @@ SCHEMA = WorkbookSchema(
     variant_header_row=2,
     variant_first_data_row=315,
     variants=_build_sections(),
+    climate_monthly=CLIMATE_MONTHLY,
+    room_ventilation=ROOM_VENTILATION,
 )

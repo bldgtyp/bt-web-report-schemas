@@ -36,6 +36,21 @@ def test_r_value_assembly_slots_are_dynamic_labels() -> None:
     assert r_values.field("gt_a").label_from_workbook is False
 
 
+def test_v10_6_climate_and_room_ventilation_maps() -> None:
+    schema = get_schema("10.6")
+
+    assert schema.climate_monthly.sheet == "Climate"
+    assert schema.climate_monthly.start_row == 26
+    assert schema.climate_monthly.end_row == 36
+    assert schema.climate_monthly.start_col == "D"
+    assert schema.climate_monthly.end_col == "U"
+
+    assert schema.room_ventilation.sheet == "Addl vent"
+    assert schema.room_ventilation.header_col == "C"
+    assert schema.room_ventilation.header_label == "Room"
+    assert schema.room_ventilation.last_col == "Z"
+
+
 def test_unknown_schema_version_fails_loudly() -> None:
     try:
         get_schema("10.7")

@@ -40,6 +40,29 @@ class SectionMap:
 
 
 @dataclass(frozen=True)
+class ClimateMonthlySchema:
+    """Active monthly climate data block."""
+
+    sheet: str
+    start_row: int
+    end_row: int
+    start_col: str
+    end_col: str
+
+
+@dataclass(frozen=True)
+class RoomVentilationSchema:
+    """Additional Ventilation room table location and columns."""
+
+    sheet: str
+    header_col: str
+    header_label: str
+    entry_col: str
+    first_entry_label: str
+    last_col: str
+
+
+@dataclass(frozen=True)
 class WorkbookSchema:
     """Supported PHPP workbook schema."""
 
@@ -52,6 +75,8 @@ class WorkbookSchema:
     variant_header_row: int
     variant_first_data_row: int
     variants: tuple[SectionMap, ...]
+    climate_monthly: ClimateMonthlySchema
+    room_ventilation: RoomVentilationSchema
 
     def section(self, section_id: str) -> SectionMap:
         for section in self.variants:
