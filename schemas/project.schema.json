@@ -229,7 +229,7 @@
           "title": "Target"
         }
       },
-      "title": "CertificationNarrative",
+      "title": "Certification",
       "type": "object"
     },
     "ClimateNarrative": {
@@ -308,7 +308,7 @@
           "title": "Weather Station Url"
         }
       },
-      "title": "ClimateNarrative",
+      "title": "Climate",
       "type": "object"
     },
     "Co2Narrative": {
@@ -351,7 +351,7 @@
           "title": "Target Tons"
         }
       },
-      "title": "Co2Narrative",
+      "title": "CO2",
       "type": "object"
     },
     "EnergyCodeNarrative": {
@@ -442,7 +442,7 @@
           "title": "Zone"
         }
       },
-      "title": "EnergyCodeNarrative",
+      "title": "Energy code",
       "type": "object"
     },
     "ErvNarrative": {
@@ -485,7 +485,7 @@
           "title": "Type Name"
         }
       },
-      "title": "ErvNarrative",
+      "title": "ERV",
       "type": "object"
     },
     "MechanicalNarrative": {
@@ -495,7 +495,7 @@
           "$ref": "#/$defs/ErvNarrative"
         }
       },
-      "title": "MechanicalNarrative",
+      "title": "Mechanical",
       "type": "object"
     },
     "Narrative": {
@@ -600,7 +600,7 @@
           "title": "Ph Window U Value"
         }
       },
-      "title": "WindowsNarrative",
+      "title": "Windows",
       "type": "object"
     }
   },

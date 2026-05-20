@@ -65,7 +65,7 @@ class Publishing(BaseModel):
 
 
 class CertificationNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Certification")
 
     target: str | None = None  # e.g. "EnerPHit by Component"
 
@@ -87,7 +87,7 @@ class CertificationNarrative(BaseModel):
 
 
 class ClimateNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Climate")
 
     weather_station_name: str | None = None
     weather_station_url: str | None = None
@@ -98,7 +98,7 @@ class ClimateNarrative(BaseModel):
 
 
 class EnergyCodeNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Energy code")
 
     name: str | None = None
     zone: str | None = None
@@ -110,7 +110,7 @@ class EnergyCodeNarrative(BaseModel):
 
 
 class Co2Narrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="CO2")
 
     subregion_name: str | None = None
     occupancy: str | None = None
@@ -118,14 +118,14 @@ class Co2Narrative(BaseModel):
 
 
 class WindowsNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Windows")
 
     ph_window_u_value: str | None = None
     ph_window_r_value: str | None = None
 
 
 class ErvNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="ERV")
 
     manufacturer_name: str | None = None
     type_name: str | None = None
@@ -133,7 +133,7 @@ class ErvNarrative(BaseModel):
 
 
 class MechanicalNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Mechanical")
 
     erv: ErvNarrative = Field(default_factory=ErvNarrative)
 
