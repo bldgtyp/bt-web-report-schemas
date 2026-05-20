@@ -18,9 +18,7 @@ from bt_web_report_schemas.gen_json_schemas import GENERATED_SCHEMAS, SCHEMAS_DI
 def test_generated_schema_matches_on_disk(model: type, filename: str) -> None:
     on_disk = (SCHEMAS_DIR / filename).read_text(encoding="utf-8")
     expected = render_schema_json(model)
-    assert on_disk == expected, (
-        f"{filename} is stale. Run `uv run gen-json-schemas` and commit the diff."
-    )
+    assert on_disk == expected, f"{filename} is stale. Run `uv run gen-json-schemas` and commit the diff."
 
 
 def test_every_schemas_file_is_declared() -> None:
@@ -51,6 +49,4 @@ def test_project_schema_includes_narrative_block() -> None:
     schema = schema_dict(Project)
     assert "Narrative" in schema["$defs"]
     narrative_props = schema["$defs"]["Narrative"]["properties"]
-    assert {"certification", "climate", "energy_code", "co2", "windows", "mechanical"} <= set(
-        narrative_props
-    )
+    assert {"certification", "climate", "energy_code", "co2", "windows", "mechanical"} <= set(narrative_props)
