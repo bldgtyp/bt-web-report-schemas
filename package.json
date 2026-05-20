@@ -1,6 +1,6 @@
 {
   "name": "@bldgtyp/web-report-schemas",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "JSON Schemas + TypeScript types for the bt-web-report platform (project.yaml, manifest.json).",
   "type": "module",
   "main": "./src-js/index.ts",
