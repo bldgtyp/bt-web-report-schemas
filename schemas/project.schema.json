@@ -1,0 +1,676 @@
+{
+  "$comment": "Generated from Pydantic models in bt_web_report_schemas. DO NOT EDIT BY HAND. Regenerate with `uv run gen-json-schemas`.",
+  "$defs": {
+    "Building": {
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "title": "Address",
+          "type": "string"
+        },
+        "building_type": {
+          "title": "Building Type",
+          "type": "string"
+        },
+        "city": {
+          "title": "City",
+          "type": "string"
+        },
+        "climate_zone": {
+          "title": "Climate Zone",
+          "type": "string"
+        },
+        "state": {
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "address",
+        "city",
+        "state",
+        "climate_zone",
+        "building_type"
+      ],
+      "title": "Building",
+      "type": "object"
+    },
+    "CertificationNarrative": {
+      "additionalProperties": false,
+      "properties": {
+        "enph_ag_ext_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enph Ag Ext Limit"
+        },
+        "enph_ag_int_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enph Ag Int Limit"
+        },
+        "enph_bg_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enph Bg Limit"
+        },
+        "enph_hd_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enph Hd Limit"
+        },
+        "enph_per_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enph Per Limit"
+        },
+        "enph_uw_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enph Uw Limit"
+        },
+        "ph_ach_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ph Ach Limit"
+        },
+        "phi_lcd_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phi Lcd Limit"
+        },
+        "phius_cd_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phius Cd Limit"
+        },
+        "phius_cfm50_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phius Cfm50 Limit"
+        },
+        "phius_cl_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phius Cl Limit"
+        },
+        "phius_hd_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phius Hd Limit"
+        },
+        "phius_hl_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phius Hl Limit"
+        },
+        "phius_nse_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phius Nse Limit"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target"
+        }
+      },
+      "title": "CertificationNarrative",
+      "type": "object"
+    },
+    "ClimateNarrative": {
+      "additionalProperties": false,
+      "properties": {
+        "ashrae_design_temps": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ashrae Design Temps"
+        },
+        "ashrae_location_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ashrae Location Name"
+        },
+        "state_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "State Name"
+        },
+        "state_name_abbreviation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "State Name Abbreviation"
+        },
+        "weather_station_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weather Station Name"
+        },
+        "weather_station_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weather Station Url"
+        }
+      },
+      "title": "ClimateNarrative",
+      "type": "object"
+    },
+    "Co2Narrative": {
+      "additionalProperties": false,
+      "properties": {
+        "occupancy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Occupancy"
+        },
+        "subregion_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subregion Name"
+        },
+        "target_tons": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Tons"
+        }
+      },
+      "title": "Co2Narrative",
+      "type": "object"
+    },
+    "EnergyCodeNarrative": {
+      "additionalProperties": false,
+      "properties": {
+        "ach_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ach Limit"
+        },
+        "ach_link": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ach Link"
+        },
+        "link": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Link"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "u_val_link": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "U Val Link"
+        },
+        "window_min_u_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Window Min U Value"
+        },
+        "zone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zone"
+        }
+      },
+      "title": "EnergyCodeNarrative",
+      "type": "object"
+    },
+    "ErvNarrative": {
+      "additionalProperties": false,
+      "properties": {
+        "link": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Link"
+        },
+        "manufacturer_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manufacturer Name"
+        },
+        "type_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type Name"
+        }
+      },
+      "title": "ErvNarrative",
+      "type": "object"
+    },
+    "MechanicalNarrative": {
+      "additionalProperties": false,
+      "properties": {
+        "erv": {
+          "$ref": "#/$defs/ErvNarrative"
+        }
+      },
+      "title": "MechanicalNarrative",
+      "type": "object"
+    },
+    "Narrative": {
+      "additionalProperties": false,
+      "description": "Hand-typed prose-facing values, grouped to mirror the report sections.\n\nEvery field is optional so a freshly-scaffolded project validates before\nthe user has filled anything in. Missing keys render as a visible\nplaceholder in dev preview and fail the build in production.",
+      "properties": {
+        "certification": {
+          "$ref": "#/$defs/CertificationNarrative"
+        },
+        "climate": {
+          "$ref": "#/$defs/ClimateNarrative"
+        },
+        "co2": {
+          "$ref": "#/$defs/Co2Narrative"
+        },
+        "energy_code": {
+          "$ref": "#/$defs/EnergyCodeNarrative"
+        },
+        "mechanical": {
+          "$ref": "#/$defs/MechanicalNarrative"
+        },
+        "windows": {
+          "$ref": "#/$defs/WindowsNarrative"
+        }
+      },
+      "title": "Narrative",
+      "type": "object"
+    },
+    "Publishing": {
+      "additionalProperties": false,
+      "properties": {
+        "cloudflare_pages_project": {
+          "title": "Cloudflare Pages Project",
+          "type": "string"
+        },
+        "production_url": {
+          "title": "Production Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "production_url",
+        "cloudflare_pages_project"
+      ],
+      "title": "Publishing",
+      "type": "object"
+    },
+    "SourceFiles": {
+      "additionalProperties": false,
+      "properties": {
+        "assets_dir": {
+          "title": "Assets Dir",
+          "type": "string"
+        },
+        "data_dir": {
+          "title": "Data Dir",
+          "type": "string"
+        },
+        "phpp_path": {
+          "default": "",
+          "title": "Phpp Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "data_dir",
+        "assets_dir"
+      ],
+      "title": "SourceFiles",
+      "type": "object"
+    },
+    "WindowsNarrative": {
+      "additionalProperties": false,
+      "properties": {
+        "ph_window_r_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ph Window R Value"
+        },
+        "ph_window_u_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ph Window U Value"
+        }
+      },
+      "title": "WindowsNarrative",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Schema for ``project.yaml`` at the root of a per-project report repo.",
+  "properties": {
+    "building": {
+      "$ref": "#/$defs/Building"
+    },
+    "building_name": {
+      "title": "Building Name",
+      "type": "string"
+    },
+    "certification_path": {
+      "title": "Certification Path",
+      "type": "string"
+    },
+    "certification_program": {
+      "title": "Certification Program",
+      "type": "string"
+    },
+    "client_name": {
+      "title": "Client Name",
+      "type": "string"
+    },
+    "contact_email": {
+      "title": "Contact Email",
+      "type": "string"
+    },
+    "narrative": {
+      "$ref": "#/$defs/Narrative"
+    },
+    "phase": {
+      "title": "Phase",
+      "type": "string"
+    },
+    "prepared_by": {
+      "title": "Prepared By",
+      "type": "string"
+    },
+    "project_title": {
+      "title": "Project Title",
+      "type": "string"
+    },
+    "publishing": {
+      "$ref": "#/$defs/Publishing"
+    },
+    "report_date": {
+      "title": "Report Date",
+      "type": "string"
+    },
+    "schema_version": {
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "slug": {
+      "title": "Slug",
+      "type": "string"
+    },
+    "source_files": {
+      "$ref": "#/$defs/SourceFiles"
+    },
+    "target_standard": {
+      "title": "Target Standard",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "slug",
+    "project_title",
+    "client_name",
+    "building_name",
+    "phase",
+    "report_date",
+    "prepared_by",
+    "contact_email",
+    "target_standard",
+    "certification_program",
+    "certification_path",
+    "building",
+    "source_files",
+    "publishing"
+  ],
+  "title": "Project",
+  "type": "object",
+  "x-bt-web-report-schemas-version": "0.1.0"
+}

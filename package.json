@@ -6,9 +6,14 @@
   "main": "./src-js/index.ts",
   "types": "./src-js/index.ts",
   "exports": {
-    ".": "./src-js/index.ts"
+    ".": "./src-js/index.ts",
+    "./project.schema.json": "./schemas/project.schema.json",
+    "./manifest.schema.json": "./schemas/manifest.schema.json"
   },
-  "files": ["src-js"],
+  "files": [
+    "src-js",
+    "schemas"
+  ],
   "license": "GPL-3.0-or-later",
   "repository": "github:bldgtyp/bt-web-report-schemas",
   "publishConfig": {
