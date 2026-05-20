@@ -5,22 +5,32 @@
       "additionalProperties": false,
       "properties": {
         "address": {
+          "minLength": 1,
+          "pattern": "\\S",
           "title": "Address",
           "type": "string"
         },
         "building_type": {
+          "minLength": 1,
+          "pattern": "\\S",
           "title": "Building Type",
           "type": "string"
         },
         "city": {
+          "minLength": 1,
+          "pattern": "\\S",
           "title": "City",
           "type": "string"
         },
         "climate_zone": {
+          "minLength": 1,
+          "pattern": "\\S",
           "title": "Climate Zone",
           "type": "string"
         },
         "state": {
+          "minLength": 1,
+          "pattern": "\\S",
           "title": "State",
           "type": "string"
         }
@@ -518,10 +528,13 @@
       "additionalProperties": false,
       "properties": {
         "cloudflare_pages_project": {
+          "minLength": 1,
+          "pattern": "\\S",
           "title": "Cloudflare Pages Project",
           "type": "string"
         },
         "production_url": {
+          "pattern": "^https://\\S+$",
           "title": "Production Url",
           "type": "string"
         }
@@ -537,10 +550,12 @@
       "additionalProperties": false,
       "properties": {
         "assets_dir": {
+          "pattern": "^[^~/].*",
           "title": "Assets Dir",
           "type": "string"
         },
         "data_dir": {
+          "pattern": "^[^~/].*",
           "title": "Data Dir",
           "type": "string"
         },
@@ -596,22 +611,31 @@
       "$ref": "#/$defs/Building"
     },
     "building_name": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Building Name",
       "type": "string"
     },
     "certification_path": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Certification Path",
       "type": "string"
     },
     "certification_program": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Certification Program",
       "type": "string"
     },
     "client_name": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Client Name",
       "type": "string"
     },
     "contact_email": {
+      "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
       "title": "Contact Email",
       "type": "string"
     },
@@ -619,14 +643,20 @@
       "$ref": "#/$defs/Narrative"
     },
     "phase": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Phase",
       "type": "string"
     },
     "prepared_by": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Prepared By",
       "type": "string"
     },
     "project_title": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Project Title",
       "type": "string"
     },
@@ -634,14 +664,18 @@
       "$ref": "#/$defs/Publishing"
     },
     "report_date": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Report Date",
       "type": "string"
     },
     "schema_version": {
+      "const": "0.2.0",
       "title": "Schema Version",
       "type": "string"
     },
     "slug": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
       "title": "Slug",
       "type": "string"
     },
@@ -649,6 +683,8 @@
       "$ref": "#/$defs/SourceFiles"
     },
     "target_standard": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Target Standard",
       "type": "string"
     }

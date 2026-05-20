@@ -1,62 +1,59 @@
-"""Pydantic models for ``project.yaml`` — the per-project metadata file."""
+"""Pydantic models for ``project.yaml`` — the per-project metadata file.
+
+Constraints are expressed via ``Field(pattern=..., min_length=...)`` so they
+flow into the generated JSON Schema and are enforced identically by Pydantic
+(server side) and by ajv (browser / Node side). Don't add ``field_validator``
+methods here unless the rule genuinely can't be expressed in JSON Schema —
+they would create silent drift between the two enforcement paths.
+"""
 
 from __future__ import annotations
 
-import re
-from typing import Any
-from urllib.parse import urlparse
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 SCHEMA_VERSION = "0.2.0"
 
-_SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-_EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+# Regex patterns are the single source of truth for both validators. Keep
+# anchored so they behave identically under JSON-Schema (unanchored search)
+# and Python ``re.search``.
+SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+EMAIL_PATTERN = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+HTTPS_URL_PATTERN = r"^https://\S+$"
+REPO_RELATIVE_PATH_PATTERN = r"^[^~/].*"  # must not start with ~ or /
+NON_BLANK_PATTERN = r"\S"  # must contain at least one non-whitespace char
+
+
+def _required_str(**extra: object) -> object:
+    """Required string: non-empty and not pure whitespace."""
+
+    return Field(min_length=1, pattern=NON_BLANK_PATTERN, **extra)  # type: ignore[arg-type]
 
 
 class Building(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    address: str
-    city: str
-    state: str
-    climate_zone: str
-    building_type: str
+    address: str = _required_str()  # type: ignore[assignment]
+    city: str = _required_str()  # type: ignore[assignment]
+    state: str = _required_str()  # type: ignore[assignment]
+    climate_zone: str = _required_str()  # type: ignore[assignment]
+    building_type: str = _required_str()  # type: ignore[assignment]
 
 
 class SourceFiles(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    phpp_path: str = ""
-    data_dir: str
-    assets_dir: str
-
-    @field_validator("data_dir", "assets_dir")
-    @classmethod
-    def _must_be_repo_relative(cls, value: str) -> str:
-        if value.startswith("~") or value.startswith("/"):
-            raise ValueError("must be repo-relative, not machine-specific")
-        return value
+    phpp_path: str = ""  # may be empty before the PHPP exists
+    data_dir: str = Field(pattern=REPO_RELATIVE_PATH_PATTERN)
+    assets_dir: str = Field(pattern=REPO_RELATIVE_PATH_PATTERN)
 
 
 class Publishing(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    production_url: str
-    cloudflare_pages_project: str
-
-    @field_validator("production_url")
-    @classmethod
-    def _must_be_https(cls, value: str) -> str:
-        try:
-            parsed = urlparse(value)
-        except Exception as exc:
-            raise ValueError("must be a valid URL") from exc
-        if parsed.scheme != "https":
-            raise ValueError("must use https")
-        if not parsed.netloc:
-            raise ValueError("must be a valid URL")
-        return value
+    production_url: str = Field(pattern=HTTPS_URL_PATTERN)
+    cloudflare_pages_project: str = _required_str()  # type: ignore[assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -169,70 +166,19 @@ class Project(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: str
-    slug: str
-    project_title: str
-    client_name: str
-    building_name: str
-    phase: str
-    report_date: str
-    prepared_by: str
-    contact_email: str
-    target_standard: str  # free-form: "Passive House", "EnerPHit", anything
-    certification_program: str
-    certification_path: str
+    schema_version: Literal["0.2.0"]
+    slug: str = Field(pattern=SLUG_PATTERN)
+    project_title: str = _required_str()  # type: ignore[assignment]
+    client_name: str = _required_str()  # type: ignore[assignment]
+    building_name: str = _required_str()  # type: ignore[assignment]
+    phase: str = _required_str()  # type: ignore[assignment]
+    report_date: str = _required_str()  # type: ignore[assignment]
+    prepared_by: str = _required_str()  # type: ignore[assignment]
+    contact_email: str = Field(pattern=EMAIL_PATTERN)
+    target_standard: str = _required_str()  # type: ignore[assignment]  # free-form: "Passive House", anything
+    certification_program: str = _required_str()  # type: ignore[assignment]
+    certification_path: str = _required_str()  # type: ignore[assignment]
     building: Building
     source_files: SourceFiles
     publishing: Publishing
     narrative: Narrative = Field(default_factory=Narrative)
-
-    @field_validator("schema_version")
-    @classmethod
-    def _schema_version_pinned(cls, value: str) -> str:
-        if value != SCHEMA_VERSION:
-            raise ValueError(f'must be "{SCHEMA_VERSION}"')
-        return value
-
-    @field_validator("slug")
-    @classmethod
-    def _slug_kebab(cls, value: str) -> str:
-        if not _SLUG_PATTERN.match(value):
-            raise ValueError("must be lowercase kebab-case, using only a-z, 0-9, and single hyphens")
-        return value
-
-    @field_validator("contact_email")
-    @classmethod
-    def _contact_email_format(cls, value: str) -> str:
-        if not _EMAIL_PATTERN.match(value):
-            raise ValueError("must be a valid email address")
-        return value
-
-    @model_validator(mode="before")
-    @classmethod
-    def _strip_top_level_blanks(cls, value: Any) -> Any:
-        """Required top-level strings must be non-empty after trim."""
-
-        if not isinstance(value, dict):
-            return value
-        required = (
-            "schema_version",
-            "slug",
-            "project_title",
-            "client_name",
-            "building_name",
-            "phase",
-            "report_date",
-            "prepared_by",
-            "contact_email",
-            "target_standard",
-            "certification_program",
-            "certification_path",
-        )
-        errors: list[str] = []
-        for key in required:
-            field_value = value.get(key)
-            if isinstance(field_value, str) and field_value.strip() == "":
-                errors.append(f"{key} is required")
-        if errors:
-            raise ValueError("; ".join(errors))
-        return value
