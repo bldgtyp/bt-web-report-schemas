@@ -4,7 +4,7 @@
 // dropdown that automatically picks up new fields added to the Pydantic
 // schema.
 
-import projectSchemaJson from "../schemas/project.schema.json" with { type: "json" };
+import projectSchemaJson from "../schemas/project.schema.json";
 
 export interface VarKeyOption {
   /** Dot-path passed to <Var k="..." /> — matches resolveVar() in the template. */
