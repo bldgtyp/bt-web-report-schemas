@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "black", "mypy"]
+dev = ["pytest", "pytest-cov", "black", "mypy", "pyyaml"]
 
 [project.scripts]
 gen-json-schemas = "bt_web_report_schemas.gen_json_schemas:main"
