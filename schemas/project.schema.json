@@ -569,6 +569,18 @@
           "title": "Assets Dir",
           "type": "string"
         },
+        "cad_files_received_date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cad Files Received Data"
+        },
         "data_dir": {
           "pattern": "^[^~/].*",
           "title": "Data Dir",
@@ -584,7 +596,7 @@
         "data_dir",
         "assets_dir"
       ],
-      "title": "SourceFiles",
+      "title": "Source Files",
       "type": "object"
     },
     "WindowsNarrative": {

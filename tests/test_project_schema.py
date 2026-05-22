@@ -50,6 +50,7 @@ def _minimum_required_payload() -> dict[str, Any]:
         },
         "source_files": {
             "phpp_path": "",
+            "cad_files_received_date": "June 6, 2025",
             "data_dir": "data",
             "assets_dir": "public/assets",
         },
@@ -113,7 +114,11 @@ def test_full_narrative_round_trip_through_yaml() -> None:
             "zone": "Zone 4(A)",
             "ach_limit": "3.0",
         },
-        "co2": {"subregion_name": "NYC eGrid (2020)", "occupancy": "4", "target_tons": "4"},
+        "co2": {
+            "subregion_name": "NYC eGrid (2020)",
+            "occupancy": "4",
+            "target_tons": "4",
+        },
         "windows": {"ph_window_u_value": "0.18", "ph_window_r_value": "5.7"},
         "mechanical": {
             "erv": {
@@ -236,6 +241,13 @@ def test_source_files_dirs_must_be_repo_relative(bad_dir: str) -> None:
     with pytest.raises(ValidationError) as excinfo:
         Project.model_validate(payload)
     assert "data_dir" in str(excinfo.value)
+
+
+def test_source_files_cad_files_received_date_can_be_omitted() -> None:
+    payload = _minimum_required_payload()
+    del payload["source_files"]["cad_files_received_date"]
+    project = Project.model_validate(payload)
+    assert project.source_files.cad_files_received_date is None
 
 
 @pytest.mark.parametrize(

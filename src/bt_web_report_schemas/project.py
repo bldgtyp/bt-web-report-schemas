@@ -42,9 +42,10 @@ class Building(BaseModel):
 
 
 class SourceFiles(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Source Files")
 
     phpp_path: str = ""  # may be empty before the PHPP exists
+    cad_files_received_date: str | None = None
     data_dir: str = Field(pattern=REPO_RELATIVE_PATH_PATTERN)
     assets_dir: str = Field(pattern=REPO_RELATIVE_PATH_PATTERN)
 
@@ -148,7 +149,9 @@ class Narrative(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    certification: CertificationNarrative = Field(default_factory=CertificationNarrative)
+    certification: CertificationNarrative = Field(
+        default_factory=CertificationNarrative
+    )
     climate: ClimateNarrative = Field(default_factory=ClimateNarrative)
     energy_code: EnergyCodeNarrative = Field(default_factory=EnergyCodeNarrative)
     co2: Co2Narrative = Field(default_factory=Co2Narrative)
