@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bt-web-report-schemas"
-version = "0.1.1"
+version = "0.2.0"
 description = "PHPP row maps + project.yaml + manifest.json schemas for the bt-web-report platform."
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }
