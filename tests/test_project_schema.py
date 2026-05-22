@@ -41,6 +41,7 @@ def _minimum_required_payload() -> dict[str, Any]:
         "target_standard": "Passive House",
         "certification_program": "Design analysis only",
         "certification_path": "Not submitted",
+        "recommended_variant_id": "enerphit_by_component",
         "building": {
             "address": "123 Example Street",
             "city": "Brooklyn",
@@ -92,6 +93,13 @@ def test_target_standard_accepts_arbitrary_string() -> None:
     assert project.target_standard == "ASHRAE 90.1 design study"
 
 
+def test_recommended_variant_id_can_be_omitted() -> None:
+    payload = _minimum_required_payload()
+    del payload["recommended_variant_id"]
+    project = Project.model_validate(payload)
+    assert project.recommended_variant_id is None
+
+
 def test_full_narrative_round_trip_through_yaml() -> None:
     payload = _minimum_required_payload()
     payload["narrative"] = {
@@ -112,6 +120,8 @@ def test_full_narrative_round_trip_through_yaml() -> None:
         "energy_code": {
             "name": "NYC Energy Code 2025",
             "zone": "Zone 4(A)",
+            "code_base_url": "https://example.com/code-base",
+            "code_airtightness_url": "https://example.com/code-airtightness",
             "ach_limit": "3.0",
         },
         "co2": {
@@ -134,6 +144,13 @@ def test_full_narrative_round_trip_through_yaml() -> None:
     assert project.narrative.certification.target == "EnerPHit by Component"
     assert project.narrative.climate.state_name_abbreviation == "NY"
     assert project.narrative.energy_code.ach_limit == "3.0"
+    assert (
+        project.narrative.energy_code.code_base_url == "https://example.com/code-base"
+    )
+    assert (
+        project.narrative.energy_code.code_airtightness_url
+        == "https://example.com/code-airtightness"
+    )
     assert project.narrative.mechanical.erv.manufacturer_name == "Zehnder America"
 
 

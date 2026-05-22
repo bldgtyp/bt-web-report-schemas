@@ -381,6 +381,30 @@
           "default": null,
           "title": "Ach Link"
         },
+        "code_airtightness_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Code Airtightness Url"
+        },
+        "code_base_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Code Base Url"
+        },
         "link": {
           "anyOf": [
             {
@@ -579,7 +603,7 @@
             }
           ],
           "default": null,
-          "title": "Cad Files Received Data"
+          "title": "Cad Files Received Date"
         },
         "data_dir": {
           "pattern": "^[^~/].*",
@@ -689,6 +713,18 @@
     },
     "publishing": {
       "$ref": "#/$defs/Publishing"
+    },
+    "recommended_variant_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recommended Variant Id"
     },
     "report_date": {
       "minLength": 1,

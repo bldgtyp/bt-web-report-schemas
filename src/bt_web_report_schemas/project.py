@@ -104,6 +104,8 @@ class EnergyCodeNarrative(BaseModel):
     name: str | None = None
     zone: str | None = None
     link: str | None = None
+    code_base_url: str | None = None
+    code_airtightness_url: str | None = None
     u_val_link: str | None = None
     ach_link: str | None = None
     ach_limit: str | None = None
@@ -189,6 +191,7 @@ class Project(BaseModel):
     target_standard: str = _required_str()  # type: ignore[assignment]  # free-form: "Passive House", anything
     certification_program: str = _required_str()  # type: ignore[assignment]
     certification_path: str = _required_str()  # type: ignore[assignment]
+    recommended_variant_id: str | None = None
     building: Building
     source_files: SourceFiles
     publishing: Publishing
