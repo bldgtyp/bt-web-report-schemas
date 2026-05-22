@@ -35,8 +35,16 @@
           "type": "string"
         },
         "total_num_occupants": {
-          "title": "Total Num Occupants",
-          "type": "number"
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Num Occupants"
         }
       },
       "required": [
@@ -44,8 +52,7 @@
         "city",
         "state",
         "climate_zone",
-        "building_type",
-        "total_num_occupants"
+        "building_type"
       ],
       "title": "Building",
       "type": "object"

@@ -39,7 +39,11 @@ class Building(BaseModel):
     state: str = _required_str()  # type: ignore[assignment]
     climate_zone: str = _required_str()  # type: ignore[assignment]
     building_type: str = _required_str()  # type: ignore[assignment]
-    total_num_occupants: float
+    # Optional with default — required-with-no-default would break every
+    # existing project.yaml the moment the schema is published. New schema
+    # fields should always ship as Optional[...] = None (or a safe default)
+    # so consumers can opt in over time.
+    total_num_occupants: float | None = None
 
 
 class SourceFiles(BaseModel):
