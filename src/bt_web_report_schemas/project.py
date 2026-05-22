@@ -39,6 +39,7 @@ class Building(BaseModel):
     state: str = _required_str()  # type: ignore[assignment]
     climate_zone: str = _required_str()  # type: ignore[assignment]
     building_type: str = _required_str()  # type: ignore[assignment]
+    total_num_occupants: float
 
 
 class SourceFiles(BaseModel):
@@ -118,8 +119,10 @@ class Co2Narrative(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", title="CO2")
 
     subregion_name: str | None = None
+    epa_subgrid_name: str | None = None
     occupancy: str | None = None
     target_tons: str | None = None
+    taget_co2_per_person: float | None = None
 
 
 class WindowsNarrative(BaseModel):

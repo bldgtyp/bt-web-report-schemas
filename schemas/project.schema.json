@@ -33,6 +33,10 @@
           "pattern": "\\S",
           "title": "State",
           "type": "string"
+        },
+        "total_num_occupants": {
+          "title": "Total Num Occupants",
+          "type": "number"
         }
       },
       "required": [
@@ -40,7 +44,8 @@
         "city",
         "state",
         "climate_zone",
-        "building_type"
+        "building_type",
+        "total_num_occupants"
       ],
       "title": "Building",
       "type": "object"
@@ -338,6 +343,18 @@
     "Co2Narrative": {
       "additionalProperties": false,
       "properties": {
+        "epa_subgrid_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Epa Subgrid Name"
+        },
         "occupancy": {
           "anyOf": [
             {
@@ -361,6 +378,18 @@
           ],
           "default": null,
           "title": "Subregion Name"
+        },
+        "taget_co2_per_person": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Taget Co2 Per Person"
         },
         "target_tons": {
           "anyOf": [

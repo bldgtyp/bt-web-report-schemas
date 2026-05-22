@@ -1,5 +1,5 @@
 // Derive the <Var k="..." /> dropdown options from the generated JSON Schema
-// for project.yaml. Walks every string-typed leaf and emits a dot-path value
+// for project.yaml. Walks every scalar prose leaf and emits a dot-path value
 // plus a hierarchical label. Used by tina/config.ts so editors get a
 // dropdown that automatically picks up new fields added to the Pydantic
 // schema.
@@ -34,13 +34,16 @@ interface SchemaNode {
 
 const projectSchema = projectSchemaJson as SchemaNode;
 
-function isStringLeaf(node: SchemaNode): boolean {
+function isVarLeaf(node: SchemaNode): boolean {
   if (node.const !== undefined) return false; // const fields are fixed; not useful as Var targets
-  if (node.type === "string") return true;
-  if (Array.isArray(node.type) && node.type.includes("string")) return true;
+  const leafTypes = new Set(["string", "number", "integer"]);
+  if (typeof node.type === "string" && leafTypes.has(node.type)) return true;
+  if (Array.isArray(node.type) && node.type.some((type) => leafTypes.has(type))) return true;
   if (node.anyOf) {
-    // Pydantic emits `str | None` as `anyOf: [{type: "string"}, {type: "null"}]`.
-    return node.anyOf.some((alt) => alt.type === "string" && alt.const === undefined);
+    // Pydantic emits optional scalars as `anyOf: [{type: "..."}, {type: "null"}]`.
+    return node.anyOf.some(
+      (alt) => typeof alt.type === "string" && leafTypes.has(alt.type) && alt.const === undefined,
+    );
   }
   return false;
 }
@@ -81,7 +84,7 @@ function walk(
     const childPath = [...pathSegments, name];
     const childLabel = [...labelSegments, labelSegment(name, child, defs)];
 
-    if (isStringLeaf(child)) {
+    if (isVarLeaf(child)) {
       out.push({ value: childPath.join("."), label: childLabel.join(" > ") });
       continue;
     }

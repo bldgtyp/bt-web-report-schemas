@@ -48,6 +48,7 @@ def _minimum_required_payload() -> dict[str, Any]:
             "state": "NY",
             "climate_zone": "ASHRAE 4A",
             "building_type": "single-family residential",
+            "total_num_occupants": 4,
         },
         "source_files": {
             "phpp_path": "",
@@ -71,6 +72,7 @@ def test_minimum_required_payload_validates() -> None:
     project = Project.model_validate(_minimum_required_payload())
     assert project.slug == "proj-0000-example"
     assert project.target_standard == "Passive House"
+    assert project.building.total_num_occupants == 4
     assert project.narrative == Narrative()  # default factory used
 
 
@@ -128,8 +130,10 @@ def test_full_narrative_round_trip_through_yaml() -> None:
         },
         "co2": {
             "subregion_name": "NYC eGrid (2020)",
+            "epa_subgrid_name": "NY (NYCW)",
             "occupancy": "4",
             "target_tons": "4",
+            "taget_co2_per_person": 4.0,
         },
         "windows": {
             "ph_window_u_value": "0.18",
@@ -155,6 +159,8 @@ def test_full_narrative_round_trip_through_yaml() -> None:
     assert project.narrative.energy_code.ach_limit == "3.0"
     assert project.narrative.energy_code.code_base_url == "https://example.com/code-base"
     assert project.narrative.energy_code.code_airtightness_url == "https://example.com/code-airtightness"
+    assert project.narrative.co2.epa_subgrid_name == "NY (NYCW)"
+    assert project.narrative.co2.taget_co2_per_person == 4.0
     assert project.narrative.windows.comfort_target_r_value == "7.7"
     assert project.narrative.windows.comfort_target_u_value == "0.13"
     assert project.narrative.mechanical.erv.manufacturer_name == "Zehnder America"
