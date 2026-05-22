@@ -1,5 +1,10 @@
 name: CI
 
+# Schemas repo CI: format check, schema-drift gate, tests, package shape.
+# Designed to be low-touch: pinned target Python, deterministic Black config,
+# regenerates JSON Schemas from Pydantic and fails if the working tree drifts
+# (so consumers in the workspace never silently lag the source-of-truth models).
+
 on:
   pull_request:
   push:
@@ -47,6 +52,14 @@ jobs:
 
       - name: Check formatting
         run: uv run black --check src tests
+
+      - name: Regenerate JSON Schemas and assert no drift
+        run: |
+          uv run gen-json-schemas
+          if ! git diff --exit-code schemas/; then
+            echo "::error::Generated JSON Schemas are out of date. Run 'uv run gen-json-schemas' locally and commit the result."
+            exit 1
+          fi
 
       - name: Run tests
         run: uv run pytest

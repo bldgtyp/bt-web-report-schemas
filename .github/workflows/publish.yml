@@ -1,10 +1,18 @@
 name: publish
 
+# Triggers:
+#   - push to main: detect version in package.json. If the matching v<version>
+#     tag doesn't exist yet AND the package version isn't on the registry,
+#     create+push the tag then publish. This is the auto-flow that removes
+#     the "did someone remember to tag/publish" foot-gun.
+#   - workflow_dispatch: manual override (still goes through the same idempotent flow).
+#
+# Idempotent: re-running on a version that's already published is a no-op.
+
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "v*"
+    branches: [main]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -13,10 +21,13 @@ jobs:
   github-packages:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: pnpm/action-setup@v6
         with:
@@ -28,13 +39,63 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: "@bldgtyp"
 
+      - name: Resolve target version
+        id: version
+        run: |
+          VERSION=$(node -e 'console.log(require("./package.json").version)')
+          if [ -z "$VERSION" ]; then
+            echo "::error::package.json has no version field"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION"
+
+      - name: Check if tag already exists
+        id: tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if git ls-remote --tags origin "v$VERSION" | grep -q "v$VERSION"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v$VERSION already exists on origin."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag v$VERSION does not exist yet."
+          fi
+
+      - name: Check if package version already published
+        id: published
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+          if pnpm view "@bldgtyp/web-report-schemas@$VERSION" version >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "@bldgtyp/web-report-schemas@$VERSION is already published. Nothing to do."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "@bldgtyp/web-report-schemas@$VERSION not yet published; will publish."
+          fi
+
+      - name: Create and push tag
+        if: steps.tag.outputs.exists == 'false' && steps.published.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "Release v$VERSION (auto-tagged by publish workflow)"
+          git push origin "v$VERSION"
+
       - name: Install JS package dependencies
+        if: steps.published.outputs.exists == 'false'
         run: pnpm install --ignore-scripts --no-frozen-lockfile
 
       - name: Pack JS package
+        if: steps.published.outputs.exists == 'false'
         run: pnpm pack --pack-destination /tmp
 
       - name: Publish JS package to GitHub Packages
+        if: steps.published.outputs.exists == 'false'
         run: pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

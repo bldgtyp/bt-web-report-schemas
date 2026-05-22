@@ -1,0 +1,25 @@
+# Pre-commit hooks for bt-web-report-schemas.
+#
+# One-time setup (per local clone):
+#   uv tool install pre-commit
+#   pre-commit install
+#
+# These run on every `git commit`. They mirror the schemas CI checks so the
+# brittle "CI fails after every push" pattern is caught locally instead.
+
+repos:
+  - repo: local
+    hooks:
+      - id: black
+        name: black (py311 target)
+        entry: uv run black --target-version py311
+        language: system
+        types_or: [python]
+        require_serial: true
+
+      - id: gen-json-schemas
+        name: regenerate JSON Schemas (drift gate)
+        entry: bash -c 'uv run gen-json-schemas && git diff --exit-code schemas/ || { echo "Generated JSON Schemas changed. Stage the diff and re-commit."; exit 1; }'
+        language: system
+        pass_filenames: false
+        files: ^(src/bt_web_report_schemas/.*\.py|schemas/.*\.json)$

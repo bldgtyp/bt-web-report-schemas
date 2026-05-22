@@ -151,9 +151,7 @@ class Narrative(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    certification: CertificationNarrative = Field(
-        default_factory=CertificationNarrative
-    )
+    certification: CertificationNarrative = Field(default_factory=CertificationNarrative)
     climate: ClimateNarrative = Field(default_factory=ClimateNarrative)
     energy_code: EnergyCodeNarrative = Field(default_factory=EnergyCodeNarrative)
     co2: Co2Narrative = Field(default_factory=Co2Narrative)

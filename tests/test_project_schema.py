@@ -144,13 +144,8 @@ def test_full_narrative_round_trip_through_yaml() -> None:
     assert project.narrative.certification.target == "EnerPHit by Component"
     assert project.narrative.climate.state_name_abbreviation == "NY"
     assert project.narrative.energy_code.ach_limit == "3.0"
-    assert (
-        project.narrative.energy_code.code_base_url == "https://example.com/code-base"
-    )
-    assert (
-        project.narrative.energy_code.code_airtightness_url
-        == "https://example.com/code-airtightness"
-    )
+    assert project.narrative.energy_code.code_base_url == "https://example.com/code-base"
+    assert project.narrative.energy_code.code_airtightness_url == "https://example.com/code-airtightness"
     assert project.narrative.mechanical.erv.manufacturer_name == "Zehnder America"
 
 
