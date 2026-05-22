@@ -116,6 +116,8 @@ def test_full_narrative_round_trip_through_yaml() -> None:
             "state_name_abbreviation": "NY",
             "ashrae_location_name": "Zone 4(A)",
             "ashrae_design_temps": "4.8°F (-15.1°C)",
+            "ashrae_winter_design_temp_F": "4.8",
+            "ashrae_winter_design_temp_C": "-15.1",
         },
         "energy_code": {
             "name": "NYC Energy Code 2025",
@@ -129,7 +131,12 @@ def test_full_narrative_round_trip_through_yaml() -> None:
             "occupancy": "4",
             "target_tons": "4",
         },
-        "windows": {"ph_window_u_value": "0.18", "ph_window_r_value": "5.7"},
+        "windows": {
+            "ph_window_u_value": "0.18",
+            "ph_window_r_value": "5.7",
+            "comfort_target_r_value": "7.7",
+            "comfort_target_u_value": "0.13",
+        },
         "mechanical": {
             "erv": {
                 "manufacturer_name": "Zehnder America",
@@ -143,9 +150,13 @@ def test_full_narrative_round_trip_through_yaml() -> None:
     project = Project.model_validate(parsed)
     assert project.narrative.certification.target == "EnerPHit by Component"
     assert project.narrative.climate.state_name_abbreviation == "NY"
+    assert project.narrative.climate.ashrae_winter_design_temp_F == "4.8"
+    assert project.narrative.climate.ashrae_winter_design_temp_C == "-15.1"
     assert project.narrative.energy_code.ach_limit == "3.0"
     assert project.narrative.energy_code.code_base_url == "https://example.com/code-base"
     assert project.narrative.energy_code.code_airtightness_url == "https://example.com/code-airtightness"
+    assert project.narrative.windows.comfort_target_r_value == "7.7"
+    assert project.narrative.windows.comfort_target_u_value == "0.13"
     assert project.narrative.mechanical.erv.manufacturer_name == "Zehnder America"
 
 

@@ -96,6 +96,8 @@ class ClimateNarrative(BaseModel):
     state_name_abbreviation: str | None = None
     ashrae_location_name: str | None = None  # was ASHRAE_location_name in Hugo
     ashrae_design_temps: str | None = None  # was ASHRAE_design_temps
+    ashrae_winter_design_temp_F: str | None = None
+    ashrae_winter_design_temp_C: str | None = None
 
 
 class EnergyCodeNarrative(BaseModel):
@@ -125,6 +127,8 @@ class WindowsNarrative(BaseModel):
 
     ph_window_u_value: str | None = None
     ph_window_r_value: str | None = None
+    comfort_target_r_value: str | None = None
+    comfort_target_u_value: str | None = None
 
 
 class ErvNarrative(BaseModel):

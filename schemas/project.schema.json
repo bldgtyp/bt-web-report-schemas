@@ -259,6 +259,30 @@
           "default": null,
           "title": "Ashrae Location Name"
         },
+        "ashrae_winter_design_temp_C": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ashrae Winter Design Temp C"
+        },
+        "ashrae_winter_design_temp_F": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ashrae Winter Design Temp F"
+        },
         "state_name": {
           "anyOf": [
             {
@@ -626,6 +650,30 @@
     "WindowsNarrative": {
       "additionalProperties": false,
       "properties": {
+        "comfort_target_r_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comfort Target R Value"
+        },
+        "comfort_target_u_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comfort Target U Value"
+        },
         "ph_window_r_value": {
           "anyOf": [
             {

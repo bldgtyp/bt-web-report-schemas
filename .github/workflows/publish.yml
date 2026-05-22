@@ -8,6 +8,9 @@ name: publish
 #   - workflow_dispatch: manual override (still goes through the same idempotent flow).
 #
 # Idempotent: re-running on a version that's already published is a no-op.
+# Resilient: every network-dependent step is wrapped in retry-with-backoff
+# (pnpm install, pnpm view, git push, pnpm publish) so a transient registry
+# blip or GitHub API hiccup does not fail the publish.
 
 on:
   workflow_dispatch:
@@ -39,6 +42,36 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: "@bldgtyp"
 
+      - name: Define retry helper
+        id: retry
+        run: |
+          cat <<'EOF' > /tmp/retry.sh
+          #!/usr/bin/env bash
+          set -u
+          max_attempts="${MAX_ATTEMPTS:-5}"
+          delay="${INITIAL_DELAY:-10}"
+          max_delay="${MAX_DELAY:-120}"
+          label="${LABEL:-$1}"
+          attempt=1
+          while true; do
+            echo "::group::[retry] attempt ${attempt}/${max_attempts}: ${label}"
+            status=0
+            "$@" || status=$?
+            echo "::endgroup::"
+            if [ "$status" -eq 0 ]; then exit 0; fi
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "::error::[retry] ${label} failed after ${max_attempts} attempts (exit ${status})"
+              exit "$status"
+            fi
+            echo "::warning::[retry] ${label} failed on attempt ${attempt} (exit ${status}); retrying in ${delay}s"
+            sleep "$delay"
+            attempt=$((attempt + 1))
+            delay=$((delay * 2))
+            if [ "$delay" -gt "$max_delay" ]; then delay="$max_delay"; fi
+          done
+          EOF
+          chmod +x /tmp/retry.sh
+
       - name: Resolve target version
         id: version
         run: |
@@ -50,11 +83,12 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $VERSION"
 
-      - name: Check if tag already exists
+      - name: Check if tag already exists (with retry)
         id: tag
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          if git ls-remote --tags origin "v$VERSION" | grep -q "v$VERSION"; then
+          LABEL='git ls-remote' /tmp/retry.sh git ls-remote --tags origin "v$VERSION" > /tmp/lsremote.out
+          if grep -q "v$VERSION" /tmp/lsremote.out; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "Tag v$VERSION already exists on origin."
           else
@@ -62,40 +96,86 @@ jobs:
             echo "Tag v$VERSION does not exist yet."
           fi
 
-      - name: Check if package version already published
+      - name: Check if package version already published (with retry)
         id: published
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
-          if pnpm view "@bldgtyp/web-report-schemas@$VERSION" version >/dev/null 2>&1; then
+          # pnpm view exits non-zero when the version doesn't exist; that's the
+          # actual signal we want, not a retry trigger. Distinguish "version
+          # really not there" from "transient registry error" by running once
+          # without retry, then if it failed, try once with retry to confirm.
+          if pnpm view "@bldgtyp/web-report-schemas@$VERSION" version >/tmp/view.out 2>/tmp/view.err; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "@bldgtyp/web-report-schemas@$VERSION is already published. Nothing to do."
+            echo "@bldgtyp/web-report-schemas@$VERSION already published."
           else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "@bldgtyp/web-report-schemas@$VERSION not yet published; will publish."
+            # Differentiate "not found" (404) from transient (5xx, DNS, etc.).
+            if grep -qi 'ERR_PNPM_NO_MATCHING_VERSION\|404\|Not Found' /tmp/view.err; then
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              echo "@bldgtyp/web-report-schemas@$VERSION not yet published; will publish."
+            else
+              # Possibly transient. Retry; if still failing, treat as not-published
+              # and let the publish step decide (publish is idempotent — duplicate
+              # versions fail loudly, which we'd want to see).
+              if LABEL='pnpm view (retry)' MAX_ATTEMPTS=3 INITIAL_DELAY=10 /tmp/retry.sh pnpm view "@bldgtyp/web-report-schemas@$VERSION" version; then
+                echo "exists=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "exists=false" >> "$GITHUB_OUTPUT"
+                echo "::warning::could not confirm published state for @bldgtyp/web-report-schemas@$VERSION after retries; assuming not-published"
+              fi
+            fi
           fi
 
-      - name: Create and push tag
+      - name: Create and push tag (with retry)
         if: steps.tag.outputs.exists == 'false' && steps.published.outputs.exists == 'false'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "v$VERSION" -m "Release v$VERSION (auto-tagged by publish workflow)"
-          git push origin "v$VERSION"
+          LABEL='git push tag' MAX_ATTEMPTS=5 INITIAL_DELAY=5 /tmp/retry.sh git push origin "v$VERSION"
 
-      - name: Install JS package dependencies
+      - name: Install JS package dependencies (with retry)
         if: steps.published.outputs.exists == 'false'
-        run: pnpm install --ignore-scripts --no-frozen-lockfile
+        run: LABEL='pnpm install' MAX_ATTEMPTS=4 INITIAL_DELAY=10 /tmp/retry.sh pnpm install --ignore-scripts --no-frozen-lockfile
 
       - name: Pack JS package
         if: steps.published.outputs.exists == 'false'
         run: pnpm pack --pack-destination /tmp
 
-      - name: Publish JS package to GitHub Packages
+      - name: Publish JS package to GitHub Packages (with retry)
         if: steps.published.outputs.exists == 'false'
-        run: pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Use a custom retry that treats "version already published" as success,
+          # because partial-success on a previous attempt can mark the version as
+          # published mid-flight on the next retry.
+          attempts=0
+          max_attempts=4
+          delay=15
+          while true; do
+            attempts=$((attempts + 1))
+            echo "::group::[retry] attempt ${attempts}/${max_attempts}: pnpm publish"
+            if output=$(pnpm publish --no-git-checks 2>&1); then
+              echo "$output"
+              echo "::endgroup::"
+              echo "Publish succeeded."
+              exit 0
+            fi
+            echo "$output"
+            echo "::endgroup::"
+            if echo "$output" | grep -qiE 'already exists|cannot publish over.*previously published|EPUBLISHCONFLICT|409'; then
+              echo "::notice::version is already published; treating as success"
+              exit 0
+            fi
+            if [ "$attempts" -ge "$max_attempts" ]; then
+              echo "::error::pnpm publish failed after ${max_attempts} attempts"
+              exit 1
+            fi
+            echo "::warning::publish attempt ${attempts} failed; retrying in ${delay}s"
+            sleep "$delay"
+            delay=$((delay * 2))
+          done
