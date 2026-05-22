@@ -49,4 +49,10 @@ def test_project_schema_includes_narrative_block() -> None:
     schema = schema_dict(Project)
     assert "Narrative" in schema["$defs"]
     narrative_props = schema["$defs"]["Narrative"]["properties"]
-    assert {"certification", "climate", "energy_code", "co2", "windows", "mechanical"} <= set(narrative_props)
+    assert {"certification", "climate", "energy_code", "co2", "windows", "mechanical", "user_defined"} <= set(
+        narrative_props
+    )
+    assert narrative_props["user_defined"]["additionalProperties"]["anyOf"] == [
+        {"type": "string"},
+        {"type": "null"},
+    ]

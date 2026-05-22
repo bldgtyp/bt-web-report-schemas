@@ -19,7 +19,7 @@ bt-web-report-schemas/
 ├── src/bt_web_report_schemas/         Python (source of truth)
 │   ├── project.py                     project.yaml — top-level metadata
 │   │                                  + narrative block (grouped per-section
-│   │                                  prose-facing values)
+│   │                                  prose-facing values plus user_defined)
 │   ├── manifest.py                    data/manifest.json — scrape output
 │   ├── phpp/                          per-version PHPP row maps (v10.6, …)
 │   └── gen_json_schemas.py            CLI: `uv run gen-json-schemas`
@@ -87,6 +87,17 @@ keys (e.g. typos like `mechancial`) fail loudly instead of silently
 dropping values.
 
 ## Adding a new project.yaml field
+
+For one-off project prose values, put them under `narrative.user_defined.*`
+instead of changing the schema:
+
+```yaml
+narrative:
+  user_defined:
+    cad_received_date: May 1, 2026
+```
+
+For a reusable standard field:
 
 1. Add the field to the appropriate model in `src/bt_web_report_schemas/project.py`.
    For narrative prose values, that's one of `CertificationNarrative`,

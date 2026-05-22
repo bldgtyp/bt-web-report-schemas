@@ -154,6 +154,14 @@ class Narrative(BaseModel):
     co2: Co2Narrative = Field(default_factory=Co2Narrative)
     windows: WindowsNarrative = Field(default_factory=WindowsNarrative)
     mechanical: MechanicalNarrative = Field(default_factory=MechanicalNarrative)
+    user_defined: dict[str, str | None] = Field(
+        default_factory=dict,
+        title="User-defined",
+        description=(
+            "Project-specific prose variables. Put ad hoc values here and reference them as "
+            "narrative.user_defined.<name> from the <Var> shortcode."
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------

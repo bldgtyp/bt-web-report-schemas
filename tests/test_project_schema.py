@@ -81,6 +81,7 @@ def test_narrative_defaults_to_empty_subsections() -> None:
     assert project.narrative.windows == WindowsNarrative()
     assert project.narrative.mechanical == MechanicalNarrative()
     assert project.narrative.mechanical.erv == ErvNarrative()
+    assert project.narrative.user_defined == {}
 
 
 def test_target_standard_accepts_arbitrary_string() -> None:
@@ -140,6 +141,25 @@ def test_narrative_partial_fill_is_allowed() -> None:
     assert project.narrative.climate.state_name == "New York"
     assert project.narrative.climate.weather_station_name is None
     assert project.narrative.certification.target is None
+
+
+def test_narrative_user_defined_accepts_project_specific_string_values() -> None:
+    payload = _minimum_required_payload()
+    payload["narrative"] = {
+        "user_defined": {
+            "cad_received_date": "May 1, 2026",
+            "architect_label": "Yun Architects",
+            "empty_placeholder": None,
+        }
+    }
+
+    project = Project.model_validate(payload)
+
+    assert project.narrative.user_defined == {
+        "cad_received_date": "May 1, 2026",
+        "architect_label": "Yun Architects",
+        "empty_placeholder": None,
+    }
 
 
 # ---------------------------------------------------------------------------

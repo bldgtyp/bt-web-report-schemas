@@ -517,6 +517,21 @@
         "mechanical": {
           "$ref": "#/$defs/MechanicalNarrative"
         },
+        "user_defined": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": "Project-specific prose variables. Put ad hoc values here and reference them as narrative.user_defined.<name> from the <Var> shortcode.",
+          "title": "User-defined",
+          "type": "object"
+        },
         "windows": {
           "$ref": "#/$defs/WindowsNarrative"
         }
