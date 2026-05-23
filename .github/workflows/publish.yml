@@ -7,25 +7,61 @@ name: publish
 #     the "did someone remember to tag/publish" foot-gun.
 #   - workflow_dispatch: manual override (still goes through the same idempotent flow).
 #
-# Idempotent: re-running on a version that's already published is a no-op.
-# Resilient: every network-dependent step is wrapped in retry-with-backoff
-# (pnpm install, pnpm view, git push, pnpm publish) so a transient registry
-# blip or GitHub API hiccup does not fail the publish.
+# Robustness contract (every change here is in service of one of these):
 #
-# Target: public npm registry as @bldgtyp/web-report-schemas. Requires
-# NPM_TOKEN secret (Automation token recommended so 2FA does not block CI).
+# 1. IDEMPOTENT. Re-running on a version that's already published is a no-op
+#    that exits 0. Re-running after a half-failed publish (tag pushed but
+#    package upload aborted) recovers cleanly.
+#
+# 2. RESILIENT to transient registry errors. pnpm install, pnpm view, git push,
+#    and pnpm publish all wrap in retry-with-backoff. Cloudflare blips,
+#    npm registry CDN hiccups, and GitHub API 5xx do not fail the workflow.
+#
+# 3. FAIL-FAST on auth / permission / 2FA errors. These never recover by
+#    retrying — the token won't grow scope mid-workflow. The retry loop
+#    categorizes the error and aborts immediately with an actionable
+#    message in $GITHUB_STEP_SUMMARY pointing the operator at the exact
+#    fix (regenerate token with bypass-2FA, etc.).
+#
+# 4. NO CONCURRENT PUBLISHES. A second push while the first publish is
+#    in flight queues, not races. Two parallel publishes against the same
+#    version cause registry-level conflicts that look like transient
+#    failures but are not.
+#
+# 5. POST-PUBLISH VERIFICATION. After pnpm publish reports success, we
+#    confirm the version is actually queryable via `pnpm view`. Detects
+#    the rare case where pnpm publish reports 0 but the registry never
+#    indexed the version.
+#
+# Target: public npm registry as @bldgtyp/web-report-schemas. Requires the
+# NPM_TOKEN secret to be an npm Granular Access Token with:
+#   - Packages and scopes → Read and write → @bldgtyp scope
+#   - "Bypass two-factor authentication (2FA)" enabled
+# (Or the legacy "Automation" Classic token type, also bypass-2FA by design.)
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
 
+# Serialize publish runs. A push that triggers while another publish is
+# still in flight queues behind it instead of racing.
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PACKAGE_NAME: "@bldgtyp/web-report-schemas"
+  NPM_REGISTRY: "https://registry.npmjs.org"
 
 jobs:
   npm-public:
     runs-on: ubuntu-latest
+    # Hard upper bound so a hung pnpm publish cannot consume Actions minutes
+    # indefinitely. The longest legitimate run (full retry budget for both
+    # install + publish) is ~6 minutes; 15 leaves comfortable headroom.
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
@@ -74,6 +110,116 @@ jobs:
           EOF
           chmod +x /tmp/retry.sh
 
+      - name: Verify NPM_TOKEN is configured
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          ### ❌ NPM_TOKEN secret is missing
+
+          The `NPM_TOKEN` repository secret is empty. Configure it before this
+          workflow can publish.
+
+          **How to fix:**
+          1. Go to <https://www.npmjs.com/settings/~/tokens/new>
+          2. Choose **Granular Access Token**
+          3. Set: Packages and scopes → **Read and write** → **`@bldgtyp` scope**
+          4. **Check "Bypass two-factor authentication (2FA)"** (required for CI)
+          5. Copy the token (starts with `npm_…`)
+          6. Add it as the `NPM_TOKEN` repo secret at
+             <https://github.com/bldgtyp/bt-web-report-schemas/settings/secrets/actions>
+          EOF
+            echo "::error::NPM_TOKEN secret is not set — see job summary for the fix."
+            exit 1
+          fi
+          echo "NPM_TOKEN present (length: ${#NODE_AUTH_TOKEN})."
+
+      - name: Pre-flight auth check (npm whoami)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          # Confirm the token authenticates BEFORE we waste time on install,
+          # pack, and four publish-retry attempts. `pnpm whoami` is a single
+          # GET against the registry; it returns the npm username on success
+          # and exits non-zero on any auth failure (expired token, wrong
+          # token type, 2FA required, etc.).
+          set +e
+          output=$(pnpm whoami --registry "${NPM_REGISTRY}/" 2>&1)
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "Authenticated to ${NPM_REGISTRY} as: $output"
+            echo "auth_user=$output" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Categorize the failure and fail-fast with an actionable summary.
+          # The retry loop later only handles TRANSIENT errors; auth failures
+          # are not retried because the token cannot grow scope mid-workflow.
+          echo "::group::pnpm whoami failed (exit ${status})"
+          echo "$output"
+          echo "::endgroup::"
+
+          summary_file="$GITHUB_STEP_SUMMARY"
+          if echo "$output" | grep -qiE 'EOTP|one-time password|otp'; then
+            cat <<'EOF' >> "$summary_file"
+          ### ❌ NPM_TOKEN requires a one-time password (2FA OTP)
+
+          The configured token enforces 2FA on writes. CI cannot prompt for an
+          OTP, so publishing will never succeed with this token.
+
+          **How to fix** (rotate the token):
+          1. Generate a new token at <https://www.npmjs.com/settings/~/tokens/new>
+          2. Type: **Granular Access Token**
+          3. Set: Packages and scopes → **Read and write** → **`@bldgtyp` scope**
+          4. **Check "Bypass two-factor authentication (2FA)"** &nbsp;⟵ required for CI
+          5. Replace the value of the `NPM_TOKEN` secret at
+             <https://github.com/bldgtyp/bt-web-report-schemas/settings/secrets/actions>
+          6. Re-run this workflow.
+          EOF
+            echo "::error::NPM_TOKEN requires a 2FA OTP that CI cannot provide. See job summary."
+          elif echo "$output" | grep -qiE 'E401|EAUTHIP|EAUTHUNKNOWN|EAUTHFAIL|EFORBIDDEN|E403|unauthor|forbidden|invalid (auth)?token|bad credentials'; then
+            cat <<'EOF' >> "$summary_file"
+          ### ❌ NPM_TOKEN is invalid or expired
+
+          The token did not authenticate against the public npm registry.
+          Most common causes: token was revoked/expired/regenerated, or the
+          value was pasted into the wrong secret.
+
+          **How to fix:**
+          1. Check the token status at <https://www.npmjs.com/settings/~/tokens>
+          2. Either regenerate the existing token or create a new Granular Access
+             Token with `@bldgtyp` Read and write + "Bypass 2FA" enabled.
+          3. Replace the `NPM_TOKEN` secret at
+             <https://github.com/bldgtyp/bt-web-report-schemas/settings/secrets/actions>
+          4. Re-run this workflow.
+          EOF
+            echo "::error::NPM_TOKEN failed auth against the registry. See job summary."
+          elif echo "$output" | grep -qiE 'ENOTFOUND|ECONNRESET|ETIMEDOUT|ECONNREFUSED|503|502|504|gateway|temporarily unavailable'; then
+            cat <<'EOF' >> "$summary_file"
+          ### ⚠️ Transient network/registry error during pre-flight auth check
+
+          Could not reach the npm registry to verify the token. This is usually
+          a registry-side blip; re-running the workflow normally clears it.
+          EOF
+            echo "::error::Transient network error during pre-flight auth check. Re-run the workflow."
+          else
+            cat <<EOF >> "$summary_file"
+          ### ❌ Pre-flight \`pnpm whoami\` failed (unknown cause)
+
+          \`\`\`
+          $output
+          \`\`\`
+
+          Check the token configuration at
+          <https://www.npmjs.com/settings/~/tokens> and the secret value at
+          <https://github.com/bldgtyp/bt-web-report-schemas/settings/secrets/actions>.
+          EOF
+            echo "::error::Pre-flight pnpm whoami failed; see job summary."
+          fi
+          exit 1
+
       - name: Resolve target version
         id: version
         run: |
@@ -104,22 +250,25 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           # Public npm read does not require auth; no .npmrc needed for the view.
           # pnpm view exits non-zero when the version doesn't exist; that's the
-          # actual signal we want, not a retry trigger. Distinguish "version
-          # really not there" from "transient registry error" by running once
-          # without retry, then if it failed, try once with retry to confirm.
-          if pnpm view "@bldgtyp/web-report-schemas@$VERSION" version >/tmp/view.out 2>/tmp/view.err; then
+          # actual signal we want, not a retry trigger.
+          set +e
+          pnpm view "${PACKAGE_NAME}@$VERSION" version >/tmp/view.out 2>/tmp/view.err
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "@bldgtyp/web-report-schemas@$VERSION already published."
+            echo "${PACKAGE_NAME}@$VERSION already published."
           else
             if grep -qi 'ERR_PNPM_NO_MATCHING_VERSION\|404\|Not Found' /tmp/view.err; then
               echo "exists=false" >> "$GITHUB_OUTPUT"
-              echo "@bldgtyp/web-report-schemas@$VERSION not yet published; will publish."
+              echo "${PACKAGE_NAME}@$VERSION not yet published; will publish."
             else
-              if LABEL='pnpm view (retry)' MAX_ATTEMPTS=3 INITIAL_DELAY=10 /tmp/retry.sh pnpm view "@bldgtyp/web-report-schemas@$VERSION" version; then
+              # Distinguish "not found" (404) from transient (5xx, DNS, etc.).
+              if LABEL='pnpm view (retry)' MAX_ATTEMPTS=3 INITIAL_DELAY=10 /tmp/retry.sh pnpm view "${PACKAGE_NAME}@$VERSION" version; then
                 echo "exists=true" >> "$GITHUB_OUTPUT"
               else
                 echo "exists=false" >> "$GITHUB_OUTPUT"
-                echo "::warning::could not confirm published state for @bldgtyp/web-report-schemas@$VERSION after retries; assuming not-published"
+                echo "::warning::could not confirm published state for ${PACKAGE_NAME}@$VERSION after retries; assuming not-published"
               fi
             fi
           fi
@@ -141,14 +290,23 @@ jobs:
         if: steps.published.outputs.exists == 'false'
         run: pnpm pack --pack-destination /tmp
 
-      - name: Publish JS package to public npm (with retry)
+      - name: Publish JS package to public npm
+        id: publish
         if: steps.published.outputs.exists == 'false'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          # Use a custom retry that treats "version already published" as success,
-          # because partial-success on a previous attempt can mark the version as
-          # published mid-flight on the next retry.
+          # Custom retry loop with error categorization:
+          #   - "version already published" → SUCCESS (idempotent re-run)
+          #   - 2FA / auth / permission errors → FAIL-FAST (no retry)
+          #   - transient network / 5xx → RETRY with backoff
+          #   - anything else → RETRY (current behavior)
+          #
+          # The pre-flight `pnpm whoami` step above already filtered most
+          # auth failures, but the registry can still hit us with a 403 on
+          # publish if the token's scope is read-only or scoped to the
+          # wrong @scope. Defense in depth.
+          VERSION="${{ steps.version.outputs.version }}"
           attempts=0
           max_attempts=4
           delay=15
@@ -158,20 +316,163 @@ jobs:
             if output=$(pnpm publish --no-git-checks --access public 2>&1); then
               echo "$output"
               echo "::endgroup::"
-              echo "Publish succeeded."
+              echo "Publish succeeded on attempt ${attempts}."
+              echo "attempts=${attempts}" >> "$GITHUB_OUTPUT"
+              echo "outcome=success" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             echo "$output"
             echo "::endgroup::"
-            if echo "$output" | grep -qiE 'already exists|cannot publish over.*previously published|EPUBLISHCONFLICT|409'; then
-              echo "::notice::version is already published; treating as success"
+
+            # SUCCESS by idempotency.
+            if echo "$output" | grep -qiE 'already exists|cannot publish over.*previously published|EPUBLISHCONFLICT|409|you cannot publish over the previously published versions?'; then
+              echo "::notice::${PACKAGE_NAME}@${VERSION} is already published; treating as success."
+              echo "attempts=${attempts}" >> "$GITHUB_OUTPUT"
+              echo "outcome=already_published" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            if [ "$attempts" -ge "$max_attempts" ]; then
-              echo "::error::pnpm publish failed after ${max_attempts} attempts"
+
+            # FAIL-FAST: 2FA / OTP required.
+            if echo "$output" | grep -qiE 'EOTP|one-time password|otp'; then
+              cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          ### ❌ Publish failed: NPM_TOKEN requires a 2FA OTP
+
+          The token enforces 2FA on writes. CI cannot prompt for an OTP.
+          Rotate the token with "Bypass 2FA" enabled and re-run.
+
+          See <https://www.npmjs.com/settings/~/tokens/new>.
+          EOF
+              echo "::error::Publish requires a 2FA OTP; rotate NPM_TOKEN with Bypass 2FA enabled."
+              echo "attempts=${attempts}" >> "$GITHUB_OUTPUT"
+              echo "outcome=failed_auth_otp" >> "$GITHUB_OUTPUT"
               exit 1
             fi
+
+            # FAIL-FAST: auth or permission errors that retry cannot fix.
+            if echo "$output" | grep -qiE 'E401|E403|EAUTHFAIL|EAUTHUNKNOWN|EFORBIDDEN|unauthor|forbidden|insufficient.*permission|you do not have permission|invalid (auth)?token|bad credentials'; then
+              cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### ❌ Publish failed: NPM_TOKEN auth or permission error
+
+          The token authenticated against the registry but lacks write access
+          to \`${PACKAGE_NAME}\`. Most likely cause: the token's scope is
+          set to read-only or to a different \`@scope\`.
+
+          **How to fix** at <https://www.npmjs.com/settings/~/tokens>:
+          - Token must have Packages and scopes → **Read and write**
+          - Selected scope: **\`@bldgtyp\`**
+          - "Bypass two-factor authentication (2FA)" enabled
+          EOF
+              echo "::error::NPM_TOKEN lacks write access to ${PACKAGE_NAME}. See job summary."
+              echo "attempts=${attempts}" >> "$GITHUB_OUTPUT"
+              echo "outcome=failed_auth_scope" >> "$GITHUB_OUTPUT"
+              exit 1
+            fi
+
+            # FAIL-FAST: package name conflict (already owned by someone else).
+            if echo "$output" | grep -qiE 'package name too similar|name (is )?already taken|ENAMETAKEN'; then
+              cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### ❌ Publish failed: package name conflict on npm
+
+          \`${PACKAGE_NAME}\` cannot be claimed under this account. This is a
+          one-time setup error (the wrong scope was used at first publish).
+          Contact <https://www.npmjs.com/support> for resolution; this is not
+          something CI can retry around.
+          EOF
+              echo "::error::Package name conflict for ${PACKAGE_NAME}. See job summary."
+              echo "attempts=${attempts}" >> "$GITHUB_OUTPUT"
+              echo "outcome=failed_name_conflict" >> "$GITHUB_OUTPUT"
+              exit 1
+            fi
+
+            # Out of attempts.
+            if [ "$attempts" -ge "$max_attempts" ]; then
+              cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### ❌ Publish failed after ${max_attempts} attempts (probably transient)
+
+          Last failure output (tail):
+          \`\`\`
+          $(echo "$output" | tail -n 20)
+          \`\`\`
+
+          Re-run the workflow. If it fails again with the same signature, check
+          <https://www.npmjsstatus.com/> for an ongoing registry incident.
+          EOF
+              echo "::error::pnpm publish failed after ${max_attempts} attempts; see job summary."
+              echo "attempts=${attempts}" >> "$GITHUB_OUTPUT"
+              echo "outcome=failed_transient_exhausted" >> "$GITHUB_OUTPUT"
+              exit 1
+            fi
+
             echo "::warning::publish attempt ${attempts} failed; retrying in ${delay}s"
             sleep "$delay"
             delay=$((delay * 2))
           done
+
+      - name: Post-publish verification (with retry)
+        if: steps.published.outputs.exists == 'false' && steps.publish.outputs.outcome == 'success'
+        run: |
+          # After a fresh publish, confirm the version is actually queryable.
+          # Catches the rare case where pnpm publish exits 0 but the registry
+          # never indexed the version (we have seen this with public-npm CDN
+          # propagation lag on the package-listing endpoint).
+          VERSION="${{ steps.version.outputs.version }}"
+          # Use the version-specific URL (not the package listing URL) because
+          # the listing endpoint can serve a stale cached 404 for tens of
+          # minutes after a publish, even though /<version> is already 200.
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -sf -o /dev/null "${NPM_REGISTRY}/${PACKAGE_NAME}/${VERSION}"; then
+              echo "Verified ${PACKAGE_NAME}@${VERSION} on registry (attempt ${attempt})."
+              exit 0
+            fi
+            echo "Attempt ${attempt}: ${PACKAGE_NAME}@${VERSION} not yet queryable; sleeping 15s."
+            sleep 15
+          done
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### ⚠️ Publish succeeded but post-publish verification timed out
+
+          \`pnpm publish\` reported success for \`${PACKAGE_NAME}@${VERSION}\`,
+          but \`${NPM_REGISTRY}/${PACKAGE_NAME}/${VERSION}\` did not return
+          200 within ~2.5 minutes. Usually a CDN propagation delay; the
+          version typically appears within 15 minutes. If it does not,
+          check the actual publish status at:
+
+          <https://www.npmjs.com/package/${PACKAGE_NAME}>
+          EOF
+          echo "::warning::Publish reported success but version not yet queryable on registry."
+
+      - name: Write success summary
+        if: success() && steps.publish.outputs.outcome == 'success'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### ✅ Published \`${PACKAGE_NAME}@${VERSION}\` to public npm
+
+          - Registry: <${NPM_REGISTRY}>
+          - Package page: <https://www.npmjs.com/package/${PACKAGE_NAME}/v/${VERSION}>
+          - Tag pushed: \`v${VERSION}\`
+          - Attempts to publish: ${{ steps.publish.outputs.attempts }}
+          EOF
+
+      - name: Write idempotent-skip summary
+        if: success() && steps.published.outputs.exists == 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### ℹ️ Nothing to publish — \`${PACKAGE_NAME}@${VERSION}\` already on registry
+
+          Re-running an already-published version is a no-op. Bump the version
+          in \`package.json\` on a follow-up commit to release a new version.
+          EOF
+
+      - name: Write already-published-during-publish summary
+        if: success() && steps.publish.outputs.outcome == 'already_published'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### ℹ️ Treated as success — \`${PACKAGE_NAME}@${VERSION}\` was published mid-flight
+
+          The registry reported \`already exists\` while this workflow was
+          attempting to publish. Almost always means a previous attempt
+          succeeded server-side but its response was lost to a network blip.
+          The version is on the registry; nothing more to do.
+          EOF
