@@ -11,6 +11,9 @@ name: publish
 # Resilient: every network-dependent step is wrapped in retry-with-backoff
 # (pnpm install, pnpm view, git push, pnpm publish) so a transient registry
 # blip or GitHub API hiccup does not fail the publish.
+#
+# Target: public npm registry as @bldgtyp/web-report-schemas. Requires
+# NPM_TOKEN secret (Automation token recommended so 2FA does not block CI).
 
 on:
   workflow_dispatch:
@@ -21,11 +24,10 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  github-packages:
+  npm-public:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -39,7 +41,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          registry-url: https://npm.pkg.github.com
+          registry-url: https://registry.npmjs.org/
           scope: "@bldgtyp"
 
       - name: Define retry helper
@@ -98,11 +100,9 @@ jobs:
 
       - name: Check if package version already published (with retry)
         id: published
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+          # Public npm read does not require auth; no .npmrc needed for the view.
           # pnpm view exits non-zero when the version doesn't exist; that's the
           # actual signal we want, not a retry trigger. Distinguish "version
           # really not there" from "transient registry error" by running once
@@ -111,14 +111,10 @@ jobs:
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "@bldgtyp/web-report-schemas@$VERSION already published."
           else
-            # Differentiate "not found" (404) from transient (5xx, DNS, etc.).
             if grep -qi 'ERR_PNPM_NO_MATCHING_VERSION\|404\|Not Found' /tmp/view.err; then
               echo "exists=false" >> "$GITHUB_OUTPUT"
               echo "@bldgtyp/web-report-schemas@$VERSION not yet published; will publish."
             else
-              # Possibly transient. Retry; if still failing, treat as not-published
-              # and let the publish step decide (publish is idempotent — duplicate
-              # versions fail loudly, which we'd want to see).
               if LABEL='pnpm view (retry)' MAX_ATTEMPTS=3 INITIAL_DELAY=10 /tmp/retry.sh pnpm view "@bldgtyp/web-report-schemas@$VERSION" version; then
                 echo "exists=true" >> "$GITHUB_OUTPUT"
               else
@@ -145,10 +141,10 @@ jobs:
         if: steps.published.outputs.exists == 'false'
         run: pnpm pack --pack-destination /tmp
 
-      - name: Publish JS package to GitHub Packages (with retry)
+      - name: Publish JS package to public npm (with retry)
         if: steps.published.outputs.exists == 'false'
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           # Use a custom retry that treats "version already published" as success,
           # because partial-success on a previous attempt can mark the version as
@@ -159,7 +155,7 @@ jobs:
           while true; do
             attempts=$((attempts + 1))
             echo "::group::[retry] attempt ${attempts}/${max_attempts}: pnpm publish"
-            if output=$(pnpm publish --no-git-checks 2>&1); then
+            if output=$(pnpm publish --no-git-checks --access public 2>&1); then
               echo "$output"
               echo "::endgroup::"
               echo "Publish succeeded."
