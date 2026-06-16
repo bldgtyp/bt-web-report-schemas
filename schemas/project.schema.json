@@ -389,7 +389,7 @@
         "taget_co2_per_person": {
           "anyOf": [
             {
-              "type": "number"
+              "type": "string"
             },
             {
               "type": "null"

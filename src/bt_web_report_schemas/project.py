@@ -126,7 +126,7 @@ class Co2Narrative(BaseModel):
     epa_subgrid_name: str | None = None
     occupancy: str | None = None
     target_tons: str | None = None
-    taget_co2_per_person: float | None = None
+    taget_co2_per_person: str | None = None
 
 
 class WindowsNarrative(BaseModel):
