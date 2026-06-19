@@ -64,14 +64,20 @@ class Publishing(BaseModel):
 
 # ---------------------------------------------------------------------------
 # Narrative block — every field is an optional string. Values flow into prose
-# via the <Var k="..." /> shortcode and are NOT used for any calculation, so we
-# do not coerce numbers/URLs here. Authors are responsible for the rendered
-# string exactly as it should appear.
+# via the <Var k="..." /> shortcode and are NOT used for any calculation.
+# Authors are responsible for the rendered string exactly as it should appear,
+# BUT a hand-edited (or scraper-written) project.yaml routinely carries bare
+# numbers like `taget_co2_per_person: 1.0`. Rather than make that a validation
+# error, every narrative model sets `coerce_numbers_to_str=True` so a number is
+# accepted and stored as its string form. The ajv (Node) validator pairs this
+# with `coerceTypes: true`, so both enforcement paths accept the same loose
+# inputs and stay in lock-step (no silent drift — the concern the no-
+# field_validator policy above guards against).
 # ---------------------------------------------------------------------------
 
 
 class CertificationNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid", title="Certification")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Certification", coerce_numbers_to_str=True)
 
     target: str | None = None  # e.g. "EnerPHit by Component"
 
@@ -93,7 +99,7 @@ class CertificationNarrative(BaseModel):
 
 
 class ClimateNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid", title="Climate")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Climate", coerce_numbers_to_str=True)
 
     weather_station_name: str | None = None
     weather_station_url: str | None = None
@@ -106,7 +112,7 @@ class ClimateNarrative(BaseModel):
 
 
 class EnergyCodeNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid", title="Energy code")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Energy code", coerce_numbers_to_str=True)
 
     name: str | None = None
     zone: str | None = None
@@ -120,7 +126,7 @@ class EnergyCodeNarrative(BaseModel):
 
 
 class Co2Narrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid", title="CO2")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="CO2", coerce_numbers_to_str=True)
 
     subregion_name: str | None = None
     epa_subgrid_name: str | None = None
@@ -130,7 +136,7 @@ class Co2Narrative(BaseModel):
 
 
 class WindowsNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid", title="Windows")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Windows", coerce_numbers_to_str=True)
 
     ph_window_u_value: str | None = None
     ph_window_r_value: str | None = None
@@ -139,7 +145,7 @@ class WindowsNarrative(BaseModel):
 
 
 class ErvNarrative(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid", title="ERV")
+    model_config = ConfigDict(frozen=True, extra="forbid", title="ERV", coerce_numbers_to_str=True)
 
     manufacturer_name: str | None = None
     type_name: str | None = None

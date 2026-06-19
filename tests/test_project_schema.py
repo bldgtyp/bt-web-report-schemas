@@ -166,6 +166,29 @@ def test_full_narrative_round_trip_through_yaml() -> None:
     assert project.narrative.mechanical.erv.manufacturer_name == "Zehnder America"
 
 
+def test_narrative_coerces_bare_numbers_to_strings() -> None:
+    """A hand-edited or scraper-written project.yaml routinely carries bare
+    numbers (``taget_co2_per_person: 1.0``) instead of quoted strings.
+    ``coerce_numbers_to_str`` accepts those and normalises them to their string
+    form, so an author doesn't have to remember to quote every numeric value.
+    """
+
+    payload = _minimum_required_payload()
+    payload["narrative"] = {
+        "co2": {"taget_co2_per_person": 1.0, "target_tons": 6, "occupancy": 4},
+        "energy_code": {"ach_limit": 3.0},
+    }
+    project = Project.model_validate(payload)
+    assert project.narrative.co2.taget_co2_per_person == "1.0"
+    assert project.narrative.co2.target_tons == "6"
+    assert project.narrative.co2.occupancy == "4"
+    assert project.narrative.energy_code.ach_limit == "3.0"
+
+    # null still means "unset" — it is not coerced to "0" or "".
+    payload["narrative"]["co2"]["taget_co2_per_person"] = None
+    assert Project.model_validate(payload).narrative.co2.taget_co2_per_person is None
+
+
 def test_narrative_partial_fill_is_allowed() -> None:
     """Partial narrative (just a few fields) must validate — projects fill in over time."""
 
