@@ -33,6 +33,7 @@ interface SchemaNode {
 }
 
 const projectSchema = projectSchemaJson as SchemaNode;
+const EXCLUDED_VAR_PATHS = new Set(["publishing.access.mode"]);
 
 function isVarLeaf(node: SchemaNode): boolean {
   if (node.const !== undefined) return false; // const fields are fixed; not useful as Var targets
@@ -83,9 +84,14 @@ function walk(
   for (const [name, child] of Object.entries(expanded.properties)) {
     const childPath = [...pathSegments, name];
     const childLabel = [...labelSegments, labelSegment(name, child, defs)];
+    const childValue = childPath.join(".");
+
+    if (EXCLUDED_VAR_PATHS.has(childValue)) {
+      continue;
+    }
 
     if (isVarLeaf(child)) {
-      out.push({ value: childPath.join("."), label: childLabel.join(" > ") });
+      out.push({ value: childValue, label: childLabel.join(" > ") });
       continue;
     }
 

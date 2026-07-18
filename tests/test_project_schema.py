@@ -74,7 +74,7 @@ def test_minimum_required_payload_validates() -> None:
     assert project.slug == "proj-0000-example"
     assert project.target_standard == "Passive House"
     assert project.building.total_num_occupants == 4
-    assert project.publishing.access == PublishingAccess()
+    assert project.publishing.access == PublishingAccess(mode="public", allowed_emails=[])
     assert project.narrative == Narrative()  # default factory used
 
 
@@ -329,6 +329,18 @@ def test_publishing_access_allowed_emails_must_be_well_formed() -> None:
     with pytest.raises(ValidationError) as excinfo:
         Project.model_validate(payload)
     assert "allowed_emails" in str(excinfo.value)
+
+
+def test_publishing_access_object_must_be_complete_when_present() -> None:
+    for access in ({"mode": "public"}, {"allowed_emails": []}):
+        payload = _minimum_required_payload()
+        payload["publishing"]["access"] = access
+
+        with pytest.raises(ValidationError) as excinfo:
+            Project.model_validate(payload)
+
+        assert "access" in str(excinfo.value)
+        assert "Field required" in str(excinfo.value)
 
 
 @pytest.mark.parametrize("bad_dir", ["~/data", "/absolute/data", "/var/tmp/assets"])

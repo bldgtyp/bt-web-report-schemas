@@ -660,7 +660,6 @@
           "type": "array"
         },
         "mode": {
-          "default": "public",
           "enum": [
             "public",
             "cloudflare_access_otp"
@@ -669,6 +668,10 @@
           "type": "string"
         }
       },
+      "required": [
+        "mode",
+        "allowed_emails"
+      ],
       "title": "Publishing Access",
       "type": "object"
     },

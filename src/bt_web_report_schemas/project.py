@@ -59,8 +59,8 @@ class SourceFiles(BaseModel):
 class PublishingAccess(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", title="Publishing Access")
 
-    mode: Literal["public", "cloudflare_access_otp"] = "public"
-    allowed_emails: list[EmailString] = Field(default_factory=list)
+    mode: Literal["public", "cloudflare_access_otp"]
+    allowed_emails: list[EmailString]
 
 
 class Publishing(BaseModel):
@@ -68,7 +68,9 @@ class Publishing(BaseModel):
 
     production_url: str = Field(pattern=HTTPS_URL_PATTERN)
     cloudflare_pages_project: str = _required_str()  # type: ignore[assignment]
-    access: PublishingAccess = Field(default_factory=PublishingAccess)
+    access: PublishingAccess = Field(
+        default_factory=lambda: PublishingAccess(mode="public", allowed_emails=[]),
+    )
 
 
 # ---------------------------------------------------------------------------
