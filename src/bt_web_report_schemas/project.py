@@ -9,7 +9,7 @@ they would create silent drift between the two enforcement paths.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -23,6 +23,7 @@ EMAIL_PATTERN = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
 HTTPS_URL_PATTERN = r"^https://\S+$"
 REPO_RELATIVE_PATH_PATTERN = r"^[^~/].*"  # must not start with ~ or /
 NON_BLANK_PATTERN = r"\S"  # must contain at least one non-whitespace char
+EmailString = Annotated[str, Field(pattern=EMAIL_PATTERN)]
 
 
 def _required_str(**extra: object) -> object:
@@ -55,11 +56,19 @@ class SourceFiles(BaseModel):
     assets_dir: str = Field(pattern=REPO_RELATIVE_PATH_PATTERN)
 
 
+class PublishingAccess(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Publishing Access")
+
+    mode: Literal["public", "cloudflare_access_otp"] = "public"
+    allowed_emails: list[EmailString] = Field(default_factory=list)
+
+
 class Publishing(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     production_url: str = Field(pattern=HTTPS_URL_PATTERN)
     cloudflare_pages_project: str = _required_str()  # type: ignore[assignment]
+    access: PublishingAccess = Field(default_factory=PublishingAccess)
 
 
 # ---------------------------------------------------------------------------
@@ -202,7 +211,7 @@ class Project(BaseModel):
     phase: str = _required_str()  # type: ignore[assignment]
     report_date: str = _required_str()  # type: ignore[assignment]
     prepared_by: str = _required_str()  # type: ignore[assignment]
-    contact_email: str = Field(pattern=EMAIL_PATTERN)
+    contact_email: EmailString
     target_standard: str = _required_str()  # type: ignore[assignment]  # free-form: "Passive House", anything
     certification_program: str = _required_str()  # type: ignore[assignment]
     certification_path: str = _required_str()  # type: ignore[assignment]

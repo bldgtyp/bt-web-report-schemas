@@ -18,6 +18,7 @@ from bt_web_report_schemas.project import (
     MechanicalNarrative,
     Narrative,
     Project,
+    PublishingAccess,
     WindowsNarrative,
 )
 
@@ -73,6 +74,7 @@ def test_minimum_required_payload_validates() -> None:
     assert project.slug == "proj-0000-example"
     assert project.target_standard == "Passive House"
     assert project.building.total_num_occupants == 4
+    assert project.publishing.access == PublishingAccess()
     assert project.narrative == Narrative()  # default factory used
 
 
@@ -100,6 +102,29 @@ def test_recommended_variant_id_can_be_omitted() -> None:
     del payload["recommended_variant_id"]
     project = Project.model_validate(payload)
     assert project.recommended_variant_id is None
+
+
+def test_publishing_access_accepts_default_public_config() -> None:
+    payload = _minimum_required_payload()
+    payload["publishing"]["access"] = {"mode": "public", "allowed_emails": []}
+    project = Project.model_validate(payload)
+    assert project.publishing.access.mode == "public"
+    assert project.publishing.access.allowed_emails == []
+
+
+def test_publishing_access_accepts_cloudflare_otp_email_list() -> None:
+    payload = _minimum_required_payload()
+    payload["publishing"]["access"] = {
+        "mode": "cloudflare_access_otp",
+        "allowed_emails": ["ed@bldgtyp.com", "john@bldgtyp.com", "owner@example.com"],
+    }
+    project = Project.model_validate(payload)
+    assert project.publishing.access.mode == "cloudflare_access_otp"
+    assert project.publishing.access.allowed_emails == [
+        "ed@bldgtyp.com",
+        "john@bldgtyp.com",
+        "owner@example.com",
+    ]
 
 
 def test_full_narrative_round_trip_through_yaml() -> None:
@@ -284,6 +309,26 @@ def test_publishing_url_must_be_well_formed() -> None:
     with pytest.raises(ValidationError) as excinfo:
         Project.model_validate(payload)
     assert "production_url" in str(excinfo.value)
+
+
+def test_publishing_access_mode_must_be_known() -> None:
+    payload = _minimum_required_payload()
+    payload["publishing"]["access"] = {"mode": "password", "allowed_emails": []}
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+    assert "access" in str(excinfo.value)
+    assert "mode" in str(excinfo.value)
+
+
+def test_publishing_access_allowed_emails_must_be_well_formed() -> None:
+    payload = _minimum_required_payload()
+    payload["publishing"]["access"] = {
+        "mode": "cloudflare_access_otp",
+        "allowed_emails": ["ed@bldgtyp.com", "not-an-email"],
+    }
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+    assert "allowed_emails" in str(excinfo.value)
 
 
 @pytest.mark.parametrize("bad_dir", ["~/data", "/absolute/data", "/var/tmp/assets"])

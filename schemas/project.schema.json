@@ -626,6 +626,9 @@
     "Publishing": {
       "additionalProperties": false,
       "properties": {
+        "access": {
+          "$ref": "#/$defs/PublishingAccess"
+        },
         "cloudflare_pages_project": {
           "minLength": 1,
           "pattern": "\\S",
@@ -643,6 +646,30 @@
         "cloudflare_pages_project"
       ],
       "title": "Publishing",
+      "type": "object"
+    },
+    "PublishingAccess": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_emails": {
+          "items": {
+            "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+            "type": "string"
+          },
+          "title": "Allowed Emails",
+          "type": "array"
+        },
+        "mode": {
+          "default": "public",
+          "enum": [
+            "public",
+            "cloudflare_access_otp"
+          ],
+          "title": "Mode",
+          "type": "string"
+        }
+      },
+      "title": "Publishing Access",
       "type": "object"
     },
     "SourceFiles": {
