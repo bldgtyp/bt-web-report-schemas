@@ -19,6 +19,7 @@ SCHEMA_VERSION = "0.2.0"
 # anchored so they behave identically under JSON-Schema (unanchored search)
 # and Python ``re.search``.
 SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+CUSTOM_PAGE_SLUG_PATTERN = r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
 EMAIL_PATTERN = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
 HTTPS_URL_PATTERN = r"^https://\S+$"
 REPO_RELATIVE_PATH_PATTERN = r"^[^~/].*"  # must not start with ~ or /
@@ -71,6 +72,15 @@ class Publishing(BaseModel):
     access: PublishingAccess = Field(
         default_factory=lambda: PublishingAccess(mode="public", allowed_emails=[]),
     )
+
+
+class CustomPage(BaseModel):
+    """One project-registered top-level page rendered by the shared template."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Custom Page")
+
+    slug: str = Field(pattern=CUSTOM_PAGE_SLUG_PATTERN)
+    label: str = _required_str()  # type: ignore[assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -221,4 +231,5 @@ class Project(BaseModel):
     building: Building
     source_files: SourceFiles
     publishing: Publishing
+    custom_pages: list[CustomPage] = Field(default_factory=list, max_length=2)
     narrative: Narrative = Field(default_factory=Narrative)

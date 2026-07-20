@@ -139,5 +139,5 @@
   ],
   "title": "Manifest",
   "type": "object",
-  "x-bt-web-report-schemas-version": "0.2.0"
+  "x-bt-web-report-schemas-version": "0.4.0"
 }

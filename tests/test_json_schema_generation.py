@@ -56,3 +56,15 @@ def test_project_schema_includes_narrative_block() -> None:
         {"type": "string"},
         {"type": "null"},
     ]
+
+
+def test_project_schema_includes_optional_custom_pages() -> None:
+    from bt_web_report_schemas.gen_json_schemas import schema_dict
+    from bt_web_report_schemas.project import Project
+
+    schema = schema_dict(Project)
+    custom_pages = schema["properties"]["custom_pages"]
+
+    assert "custom_pages" not in schema["required"]
+    assert custom_pages["maxItems"] == 2
+    assert custom_pages["items"] == {"$ref": "#/$defs/CustomPage"}

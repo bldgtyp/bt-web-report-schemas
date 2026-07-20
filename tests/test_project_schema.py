@@ -13,6 +13,7 @@ from bt_web_report_schemas.project import (
     CertificationNarrative,
     ClimateNarrative,
     Co2Narrative,
+    CustomPage,
     EnergyCodeNarrative,
     ErvNarrative,
     MechanicalNarrative,
@@ -75,7 +76,87 @@ def test_minimum_required_payload_validates() -> None:
     assert project.target_standard == "Passive House"
     assert project.building.total_num_occupants == 4
     assert project.publishing.access == PublishingAccess(mode="public", allowed_emails=[])
+    assert project.custom_pages == []
     assert project.narrative == Narrative()  # default factory used
+
+
+@pytest.mark.parametrize(
+    "custom_pages",
+    [
+        [{"slug": "resilience", "label": "Resilience"}],
+        [
+            {"slug": "resilience", "label": "Resilience"},
+            {"slug": "design-notes", "label": "Design Notes"},
+        ],
+    ],
+)
+def test_custom_pages_accepts_one_or_two_entries(custom_pages: list[dict[str, str]]) -> None:
+    payload = _minimum_required_payload()
+    payload["custom_pages"] = custom_pages
+
+    project = Project.model_validate(payload)
+
+    assert project.custom_pages == [CustomPage.model_validate(page) for page in custom_pages]
+
+
+def test_custom_pages_rejects_more_than_two_entries() -> None:
+    payload = _minimum_required_payload()
+    payload["custom_pages"] = [
+        {"slug": "resilience", "label": "Resilience"},
+        {"slug": "durability", "label": "Durability"},
+        {"slug": "design-notes", "label": "Design Notes"},
+    ]
+
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+
+    assert "custom_pages" in str(excinfo.value)
+    assert "at most 2" in str(excinfo.value)
+
+
+@pytest.mark.parametrize("bad_slug", ["Resilience", "2-resilience", "resilience_page", "resilience--page"])
+def test_custom_page_rejects_malformed_slug(bad_slug: str) -> None:
+    payload = _minimum_required_payload()
+    payload["custom_pages"] = [{"slug": bad_slug, "label": "Resilience"}]
+
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+
+    assert "custom_pages.0.slug" in str(excinfo.value)
+
+
+def test_custom_page_rejects_blank_label() -> None:
+    payload = _minimum_required_payload()
+    payload["custom_pages"] = [{"slug": "resilience", "label": "   "}]
+
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+
+    assert "custom_pages.0.label" in str(excinfo.value)
+
+
+def test_custom_page_rejects_extra_properties() -> None:
+    payload = _minimum_required_payload()
+    payload["custom_pages"] = [{"slug": "resilience", "label": "Resilience", "route": "/resilience/"}]
+
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+
+    assert "custom_pages.0.route" in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "custom_pages",
+    ["resilience", ["resilience"], [{"slug": 123, "label": "Resilience"}], [{"slug": "resilience", "label": 123}]],
+)
+def test_custom_pages_rejects_wrong_value_types(custom_pages: object) -> None:
+    payload = _minimum_required_payload()
+    payload["custom_pages"] = custom_pages
+
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+
+    assert "custom_pages" in str(excinfo.value)
 
 
 def test_narrative_defaults_to_empty_subsections() -> None:
