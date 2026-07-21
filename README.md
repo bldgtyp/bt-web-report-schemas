@@ -120,5 +120,5 @@ of `tina/config.ts` required.
 Schema version is a hard equality check — bump it whenever the shape
 changes in a way that an existing `project.yaml` wouldn't validate against.
 
-See [`../context/data-pipeline.html`](../context/data-pipeline.html) for
+See [`../context/repos-and-workflows.html#end-to-end`](../context/repos-and-workflows.html#end-to-end) for
 how these schemas fit into the broader data flow.
