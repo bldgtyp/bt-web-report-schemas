@@ -36,6 +36,18 @@ def test_r_value_assembly_slots_are_dynamic_labels() -> None:
     assert r_values.field("gt_a").label_from_workbook is False
 
 
+def test_envelope_assembly_slots_include_all_fifteen_dynamic_labels() -> None:
+    schema = get_schema("10.6")
+    envelope = schema.section("envelope")
+
+    assert envelope.field("floor_bg").row == 328
+    assert envelope.field("floor_bg").label_from_workbook is True
+    assert envelope.field("assembly_06").row == 333
+    assert envelope.field("assembly_15").row == 342
+    assert envelope.field("assembly_06").label_from_workbook is True
+    assert envelope.field("assembly_15").label_from_workbook is True
+
+
 def test_v10_6_climate_and_room_ventilation_maps() -> None:
     schema = get_schema("10.6")
 

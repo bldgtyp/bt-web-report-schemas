@@ -22,7 +22,14 @@ def _section(section_id: str, label: str, start_row: int, labels: list[str]) -> 
     for offset, phpp_label in enumerate(labels):
         label_from_workbook = False
         base_id = _field_id(phpp_label)
-        if section_id == "r_values" and phpp_label[:2].isdigit() and phpp_label.endswith("ud-"):
+        if section_id == "envelope" and 1 <= offset <= 15:
+            # PHPP exposes 15 project-defined assembly slots in rows 328-342.
+            # Keep the original IDs for the first five slots for compatibility,
+            # but discover every slot's actual label from column C.
+            label_from_workbook = True
+            if phpp_label == "-":
+                base_id = f"assembly_{offset:02d}"
+        elif section_id == "r_values" and phpp_label[:2].isdigit() and phpp_label.endswith("ud-"):
             base_id = f"assembly_{phpp_label[:2]}"
             label_from_workbook = True
         count = seen.get(base_id, 0)
