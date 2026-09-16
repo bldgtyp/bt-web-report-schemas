@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from bt_web_report_schemas.project import (
     SCHEMA_VERSION,
     CertificationNarrative,
+    CertificationPathways,
     ClimateNarrative,
     Co2Narrative,
     CustomPage,
@@ -77,6 +78,7 @@ def test_minimum_required_payload_validates() -> None:
     assert project.building.total_num_occupants == 4
     assert project.publishing.access == PublishingAccess(mode="public", allowed_emails=[])
     assert project.custom_pages == []
+    assert project.certification_pathways is None
     assert project.narrative == Narrative()  # default factory used
 
 
@@ -159,6 +161,76 @@ def test_custom_pages_rejects_wrong_value_types(custom_pages: object) -> None:
     assert "custom_pages" in str(excinfo.value)
 
 
+def test_certification_pathways_accepts_show_and_recommended() -> None:
+    payload = _minimum_required_payload()
+    payload["certification_pathways"] = {
+        "show": ["enerphit-component", "phi-classic"],
+        "recommended": "enerphit-component",
+    }
+
+    project = Project.model_validate(payload)
+
+    assert project.certification_pathways == CertificationPathways(
+        show=["enerphit-component", "phi-classic"],
+        recommended="enerphit-component",
+    )
+
+
+def test_certification_pathways_defers_catalog_rules_to_renderer() -> None:
+    payload = _minimum_required_payload()
+    payload["certification_pathways"] = {
+        "show": ["future-pathway", "future-pathway"],
+        "recommended": "another-future-pathway",
+    }
+
+    project = Project.model_validate(payload)
+
+    assert project.certification_pathways == CertificationPathways(
+        show=["future-pathway", "future-pathway"],
+        recommended="another-future-pathway",
+    )
+
+
+def test_certification_pathways_rejects_empty_show() -> None:
+    payload = _minimum_required_payload()
+    payload["certification_pathways"] = {"show": []}
+
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+
+    assert "certification_pathways.show" in str(excinfo.value)
+
+
+def test_certification_pathways_rejects_malformed_show_id() -> None:
+    payload = _minimum_required_payload()
+    payload["certification_pathways"] = {"show": ["Phi Classic"]}
+
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+
+    assert "certification_pathways.show.0" in str(excinfo.value)
+
+
+def test_certification_pathways_rejects_malformed_recommended_id() -> None:
+    payload = _minimum_required_payload()
+    payload["certification_pathways"] = {"show": ["phi-classic"], "recommended": "phi_classic"}
+
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+
+    assert "certification_pathways.recommended" in str(excinfo.value)
+
+
+def test_certification_pathways_rejects_extra_properties() -> None:
+    payload = _minimum_required_payload()
+    payload["certification_pathways"] = {"show": ["phi-classic"], "default_open": "phi-classic"}
+
+    with pytest.raises(ValidationError) as excinfo:
+        Project.model_validate(payload)
+
+    assert "certification_pathways.default_open" in str(excinfo.value)
+
+
 def test_narrative_defaults_to_empty_subsections() -> None:
     project = Project.model_validate(_minimum_required_payload())
     assert project.narrative.certification == CertificationNarrative()
@@ -214,6 +286,8 @@ def test_full_narrative_round_trip_through_yaml() -> None:
         "certification": {
             "target": "EnerPHit by Component",
             "ph_ach_limit": "0.8",
+            "phi_cd_limit": "5.38",
+            "phi_leb_cd_limit": "10.13",
             "enph_hd_limit": "7.92",
             "enph_uw_limit": "0.151",
             "phius_hd_limit": "7.3",
@@ -259,6 +333,8 @@ def test_full_narrative_round_trip_through_yaml() -> None:
     parsed = yaml.safe_load(text)
     project = Project.model_validate(parsed)
     assert project.narrative.certification.target == "EnerPHit by Component"
+    assert project.narrative.certification.phi_cd_limit == "5.38"
+    assert project.narrative.certification.phi_leb_cd_limit == "10.13"
     assert project.narrative.climate.state_name_abbreviation == "NY"
     assert project.narrative.climate.ashrae_winter_design_temp_F == "4.8"
     assert project.narrative.climate.ashrae_winter_design_temp_C == "-15.1"
