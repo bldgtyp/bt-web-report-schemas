@@ -19,12 +19,14 @@ SCHEMA_VERSION = "0.2.0"
 # anchored so they behave identically under JSON-Schema (unanchored search)
 # and Python ``re.search``.
 SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+CERTIFICATION_PATHWAY_ID_PATTERN = SLUG_PATTERN
 CUSTOM_PAGE_SLUG_PATTERN = r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
 EMAIL_PATTERN = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
 HTTPS_URL_PATTERN = r"^https://\S+$"
 REPO_RELATIVE_PATH_PATTERN = r"^[^~/].*"  # must not start with ~ or /
 NON_BLANK_PATTERN = r"\S"  # must contain at least one non-whitespace char
 EmailString = Annotated[str, Field(pattern=EMAIL_PATTERN)]
+CertificationPathwayId = Annotated[str, Field(pattern=CERTIFICATION_PATHWAY_ID_PATTERN)]
 
 
 def _required_str(**extra: object) -> object:
@@ -83,6 +85,19 @@ class CustomPage(BaseModel):
     label: str = _required_str()  # type: ignore[assignment]
 
 
+class CertificationPathways(BaseModel):
+    """Pathway IDs are catalog-validated by the renderer, not this schema.
+
+    The renderer rejects unknown IDs, duplicates, and a recommended ID that is
+    not in ``show``, so adding a catalog pathway does not require a schemas release.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid", title="Certification Pathways")
+
+    show: list[CertificationPathwayId] = Field(min_length=1)
+    recommended: CertificationPathwayId | None = None
+
+
 # ---------------------------------------------------------------------------
 # Narrative block — every field is an optional string. Values flow into prose
 # via the <Var k="..." /> shortcode and are NOT used for any calculation.
@@ -105,6 +120,8 @@ class CertificationNarrative(BaseModel):
     # Climate-specific limits — hand-entered from PHI / Phius tools.
     ph_ach_limit: str | None = None
     phi_lcd_limit: str | None = None
+    phi_cd_limit: str | None = None  # PHPP cooling + dehumidification demand limit
+    phi_leb_cd_limit: str | None = None  # PHI Low Energy Building cooling limit
     enph_hd_limit: str | None = None
     enph_per_limit: str | None = None
     enph_bg_limit: str | None = None
@@ -232,4 +249,5 @@ class Project(BaseModel):
     source_files: SourceFiles
     publishing: Publishing
     custom_pages: list[CustomPage] = Field(default_factory=list, max_length=2)
+    certification_pathways: CertificationPathways | None = None
     narrative: Narrative = Field(default_factory=Narrative)

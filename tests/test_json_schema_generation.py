@@ -68,3 +68,25 @@ def test_project_schema_includes_optional_custom_pages() -> None:
     assert "custom_pages" not in schema["required"]
     assert custom_pages["maxItems"] == 2
     assert custom_pages["items"] == {"$ref": "#/$defs/CustomPage"}
+
+
+def test_project_schema_includes_optional_certification_pathways() -> None:
+    from bt_web_report_schemas.gen_json_schemas import schema_dict
+    from bt_web_report_schemas.project import CERTIFICATION_PATHWAY_ID_PATTERN, Project
+
+    schema = schema_dict(Project)
+    certification_pathways = schema["properties"]["certification_pathways"]
+    definition = schema["$defs"]["CertificationPathways"]
+
+    assert "certification_pathways" not in schema["required"]
+    assert certification_pathways["anyOf"] == [
+        {"$ref": "#/$defs/CertificationPathways"},
+        {"type": "null"},
+    ]
+    assert definition["additionalProperties"] is False
+    assert definition["properties"]["show"]["minItems"] == 1
+    assert definition["properties"]["show"]["items"]["pattern"] == CERTIFICATION_PATHWAY_ID_PATTERN
+    assert definition["properties"]["recommended"]["anyOf"] == [
+        {"pattern": CERTIFICATION_PATHWAY_ID_PATTERN, "type": "string"},
+        {"type": "null"},
+    ]

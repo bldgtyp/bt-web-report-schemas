@@ -144,6 +144,18 @@
           "default": null,
           "title": "Ph Ach Limit"
         },
+        "phi_cd_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phi Cd Limit"
+        },
         "phi_lcd_limit": {
           "anyOf": [
             {
@@ -155,6 +167,18 @@
           ],
           "default": null,
           "title": "Phi Lcd Limit"
+        },
+        "phi_leb_cd_limit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phi Leb Cd Limit"
         },
         "phius_cd_limit": {
           "anyOf": [
@@ -242,6 +266,39 @@
         }
       },
       "title": "Certification",
+      "type": "object"
+    },
+    "CertificationPathways": {
+      "additionalProperties": false,
+      "description": "Pathway IDs are catalog-validated by the renderer, not this schema.\n\nThe renderer rejects unknown IDs, duplicates, and a recommended ID that is\nnot in ``show``, so adding a catalog pathway does not require a schemas release.",
+      "properties": {
+        "recommended": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommended"
+        },
+        "show": {
+          "items": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Show",
+          "type": "array"
+        }
+      },
+      "required": [
+        "show"
+      ],
+      "title": "Certification Pathways",
       "type": "object"
     },
     "ClimateNarrative": {
@@ -810,6 +867,17 @@
       "title": "Certification Path",
       "type": "string"
     },
+    "certification_pathways": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CertificationPathways"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "certification_program": {
       "minLength": 1,
       "pattern": "\\S",
@@ -916,5 +984,5 @@
   ],
   "title": "Project",
   "type": "object",
-  "x-bt-web-report-schemas-version": "0.4.0"
+  "x-bt-web-report-schemas-version": "0.5.0"
 }
