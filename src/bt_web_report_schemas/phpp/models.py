@@ -63,6 +63,45 @@ class RoomVentilationSchema:
 
 
 @dataclass(frozen=True)
+class EnvelopeAreasSchema:
+    """Areas worksheet surfaces plus the U-values blocks that key them to Variants.
+
+    Every Areas row names its assembly as ``<id>-<name>`` (``02ud-Cellar-Wall``)
+    and its PHPP group as ``<number>-<label>`` (``9-``). The U-values sheet is a
+    run of fixed-height assembly blocks; each block's id cell matches the Areas
+    prefix, and the block's first layer name starts with the Variants key
+    letter (``a-Cellar-Wall``) that selects a row in the Variants ENVELOPE
+    section. That letter is the only link between an area and its R-value.
+    """
+
+    areas_sheet: str
+    areas_first_row: int
+    areas_last_row: int
+    group_col: str
+    area_col: str
+    assembly_col: str
+    u_values_sheet: str
+    u_values_first_block_row: int
+    u_values_block_height: int
+    u_values_id_col: str
+    u_values_name_col: str
+    u_values_layer_col: str
+    u_values_layer_first_offset: int
+    u_values_layer_count: int
+    ambient_groups: tuple[int, ...]
+    ground_groups: tuple[int, ...]
+
+    def exposure(self, group_number: int) -> str:
+        """``A`` for ambient-air groups, ``B`` for ground groups, empty otherwise."""
+
+        if group_number in self.ambient_groups:
+            return "A"
+        if group_number in self.ground_groups:
+            return "B"
+        return ""
+
+
+@dataclass(frozen=True)
 class WorkbookSchema:
     """Supported PHPP workbook schema."""
 
@@ -77,6 +116,7 @@ class WorkbookSchema:
     variants: tuple[SectionMap, ...]
     climate_monthly: ClimateMonthlySchema
     room_ventilation: RoomVentilationSchema
+    envelope_areas: EnvelopeAreasSchema
 
     def section(self, section_id: str) -> SectionMap:
         for section in self.variants:
