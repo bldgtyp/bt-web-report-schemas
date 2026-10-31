@@ -6,6 +6,7 @@ import re
 
 from bt_web_report_schemas.phpp.models import FieldRef, SectionMap, WorkbookSchema
 from bt_web_report_schemas.phpp.v10_6.climate import CLIMATE_MONTHLY
+from bt_web_report_schemas.phpp.v10_6.envelope_areas import ENVELOPE_AREAS
 from bt_web_report_schemas.phpp.v10_6.room_ventilation import ROOM_VENTILATION
 
 
@@ -381,4 +382,5 @@ SCHEMA = WorkbookSchema(
     variants=_build_sections(),
     climate_monthly=CLIMATE_MONTHLY,
     room_ventilation=ROOM_VENTILATION,
+    envelope_areas=ENVELOPE_AREAS,
 )
